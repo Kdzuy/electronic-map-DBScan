@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bản đồ điện tử</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="map-blocker">
+        <div id="map-blocker-message">Vui lòng đăng nhập để sử dụng bản đồ</div>
+    </div>
+    <button id="toggle-btn"><i class="fa-solid fa-bars"></i></button>
+
+    <div id="sidebar">
+
+            <div id="sidebar-header">
+                <h3>Bảng Điều Khiển</h3>
+                <!-- <button id="toggle-btn"><i class="fa-solid fa-bars"></i></button> -->
+            </div>
+        <div class="sidebar-content">
+            <div id="initial-view-manager" class="form-group"> 
+                <h4><i class="fa-solid fa-map-location-dot"></i> Vị Trí Khởi Tạo</h4>
+                <input type="text" id="initial-view-input" placeholder="Tự động lưu" disabled>
+                <button id="save-view-btn" class="btn-action" style="margin-top: 5px;">Lưu Vị Trí Hiện Tại</button>
+                <hr>
+                <div id="hotspot-analysis-manager" class="form-group">
+                    <h4><i class="fa-solid fa-fire-extinguisher"></i> Phân tích tác động</h4>
+                    <button id="toggle-analysis-btn" class="btn-action">Bật Phân Tích</button>
+                </div>
+                <div id="add-by-coords-manager" class="form-group editor-only">
+                    <h4><i class="fa-solid fa-location-crosshairs"></i> Thêm ghim bằng tọa độ</h4>
+                    <input type="text" id="coords-input" placeholder="Ví dụ: 10.38957,105.62563">
+                    <button id="add-by-coords-btn" class="btn-action">Thêm Ghim</button>
+                </div>
+                
+
+            </div>
+            <hr>
+
+            <details id="filter-container" class="filter-details">
+                <summary><h4 id="type-filter-header"><i class="fa-solid fa-filter"></i> Lọc loại địa điểm</h4></summary>
+                <div class="filter-content">
+                    <input type="text" class="filter-search" id="type-search-input" placeholder="Tìm loại...">
+                    <label class="select-all-label">
+                        <input type="checkbox" id="type-select-all" checked> Chọn tất cả
+                    </label>
+                    <div class="filter-list" id="type-filter-list">
+                        </div>
+                </div>
+            </details>
+            <hr>
+            <details id="user-filter-container" class="filter-details admin-only" style="display: none;">
+                <summary><h4 id="user-filter-header"><i class="fa-solid fa-users"></i> Lọc theo người tạo</h4></summary>
+                <div class="filter-content">
+                    <input type="text" class="filter-search" id="user-search-input" placeholder="Tìm người tạo...">
+                    <label class="select-all-label">
+                        <input type="checkbox" id="user-select-all" checked> Chọn tất cả
+                    </label>
+                    <div class="filter-list" id="user-filter-list">
+                        </div>
+                </div>
+            </details>
+            <hr class="admin-only" style="display: none;">
+            <div id="pinned-list-container">
+                <h4 id="pinned-list-header"><i class="fa-solid fa-thumbtack"></i> Danh sách đã ghim</h4>
+                <div id="pinned-list-search">
+                    
+                </div>
+                <div id="pinned-list">
+                    </div>
+            </div>
+            <hr> 
+            
+            <div id="type-manager" class="admin-only">
+                <h4 id="type-manager-header"><i class="fa-solid fa-tags"></i> Quản lý loại địa điểm</h4>
+                <div id="add-marker-type-form"></div>
+                <div class="form-group">
+                    <label for="new-type-name">Tên loại mới:</label>
+                    <input type="text" id="new-type-name" placeholder="Ví dụ: Địa điểm, đối tượng...">
+                </div>
+                <div class="form-group">
+                    <label>Chọn Icon:</label>
+                    <div id="icon-selector">
+                        </div>
+                    <input type="hidden" id="selected-icon-url">
+                </div>
+                <button id="add-type-btn" class="btn-add"><i class="fa-solid fa-plus"></i> Thêm Loại</button>
+            </div>
+        </div>
+        
+        <div style="padding: 0; border-top: 1px solid #ddd;" class="editor-only">
+            <button id="save-btn" class="btn-save"><i class="fa-solid fa-floppy-disk"></i> Lưu Tất Cả Ghim</button>
+        </div>
+        <div id="sidebar-footer">
+            <div id="user-info">
+                <span id="user-fullname"></span>
+                <span id="user-role"></span>
+                <button id="logout-btn" title="Đăng xuất"><i class="fa-solid fa-right-from-bracket"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <div id="map"></div>
+    <div id="auth-container">
+        <button id="auth-toggle-btn"><i class="fa-solid fa-user"></i></button>
+        <div id="login-popup">
+            <h4>Đăng nhập</h4>
+            <input type="text" id="username-input" name="username" autocomplete="username" class="form-control" placeholder="Tên đăng nhập">
+            <input type="password" id="password-input" name="password" autocomplete="current-password" class="form-control" placeholder="Mật khẩu">
+            <button id="login-btn" class="btn-action">Đăng nhập</button>
+        </div>
+    </div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+    <script src="script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/density-clustering@1.3.0/lib/DBSCAN.min.js"></script>
+    <script src="analysis.js"></script>
+</body>
+</html>

@@ -1,0 +1,67 @@
+{
+  "markerTypes": {
+    "restaurant": {
+      "name": "Nhà hàng",
+      "iconUrl": "https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png"
+    },
+    "school": {
+      "name": "Trường học",
+      "iconUrl": "https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png"
+    },
+    "i_tng": {
+      "name": "đối tượng",
+      "iconUrl": "https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png"
+    },
+    "aaaaa": {
+      "name": "aaaaa",
+      "iconUrl": "https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png"
+    }
+  },
+  "markers": [
+    {
+      "id": 1755859914985,
+      "lat": 10.395225138550867,
+      "lng": 105.61010173307389,
+      "name": "gdfgd",
+      "desc": "dfgdfgdfgd",
+      "inclusionDate": "2025-08-27",
+      "type": "school"
+    },
+    {
+      "id": 1755859926571,
+      "lat": 10.389571297021899,
+      "lng": 105.6256316667871,
+      "name": "dfgdfg",
+      "desc": "dfgdfgdfgd",
+      "inclusionDate": "2025-08-26",
+      "type": "ma_túy"
+    },
+    {
+      "id": 1755862210130,
+      "lat": 10.398859558498552,
+      "lng": 105.62973961984153,
+      "name": "đta",
+      "desc": "ádasdasd",
+      "inclusionDate": "2025-08-28",
+      "type": "i_tng"
+    },
+    {
+      "id": 1755869823038,
+      "lat": 10.403831245369487,
+      "lng": 105.61534881591798,
+      "name": "dxvd",
+      "desc": "cxvdfgaaaa",
+      "inclusionDate": "2025-08-11",
+      "type": "restaurant"
+    },
+    {
+      "id": 1755870877209,
+      "lat": 10.39523,
+      "lng": 105.61015,
+      "name": "aaaa",
+      "desc": "sad",
+      "inclusionDate": "",
+      "type": "i_tng"
+    }
+  ]
+}
