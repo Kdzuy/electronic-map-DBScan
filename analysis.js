@@ -121,12 +121,12 @@ function drawCluster(members) {
     if (hasCorrelation) { 
         mainColor = '#f39c12'; // Màu vàng cho tương quan
         const typeNames = Array.from(uniqueTypes).map(t => markerTypes[t]?.name || 'Không rõ').join(', ');
-        mainPopupText = `Vùng Tương Quan: ${typeNames} (${members.length} điểm)`;
+        mainPopupText = `<b>Vùng Tương Quan: </b>${typeNames} (${members.length} điểm)`;
     } 
     else {
         const typeName = markerTypes[members[0].type]?.name || 'Không rõ';
         mainColor = '#e74c3c'; // Màu đỏ cho mật độ cao
-        mainPopupText = `Vùng Tập Trung (Mật độ cao): ${typeName} (${members.length} điểm)`;
+        mainPopupText = `<b>Vùng Tập Trung (Mật độ cao): </b>${typeName} (${members.length} điểm)`;
     }
 
         // Vẽ vòng tròn lớn bao quanh cụm
