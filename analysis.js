@@ -121,7 +121,7 @@ function drawCluster(members) {
     if (hasCorrelation) { 
         mainColor = '#f39c12'; // Màu vàng cho tương quan
         const typeNames = Array.from(uniqueTypes).map(t => markerTypes[t]?.name || 'Không rõ').join(', ');
-        mainPopupText = `<b>Vùng Tương Quan: </b>${typeNames} (${members.length} điểm)`;
+        mainPopupText = `<b>Vùng Tương Quan: </b>${typeNames} (<b>${members.length}</b> điểm)`;
     } 
     else {
         const typeName = markerTypes[members[0].type]?.name || 'Không rõ';
