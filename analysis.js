@@ -126,7 +126,7 @@ function drawCluster(members) {
     else {
         const typeName = markerTypes[members[0].type]?.name || 'Không rõ';
         mainColor = '#e74c3c'; // Màu đỏ cho mật độ cao
-        mainPopupText = `<b>Vùng Tập Trung (Mật độ cao): </b>${typeName} (${members.length} điểm)`;
+        mainPopupText = `<b>Vùng Tập Trung (Mật độ cao): </b>${typeName} (<b>${members.length}</b> điểm)`;
     }
 
         // Vẽ vòng tròn lớn bao quanh cụm
