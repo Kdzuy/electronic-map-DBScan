@@ -9,8 +9,21 @@ let allAccounts = []; // Biến mới để lưu danh sách tài khoản
 let currentUser = null; // Biến mới để lưu thông tin người dùng đã đăng nhập
 let isPopupOpen = false;
 let isAnalysisMode = false;
-let interactionLayerGroup; // Bổ sung khai báo này tại đây
+let interactionLayerGroup;
 let allMarkersData = [];
+// START: Biến lưu trữ kết quả phân tích
+let highDensityClusters = [];
+let correlatedClusters = [];
+    function clearAnalysisResults() {
+        highDensityClusters = [];
+        correlatedClusters = [];
+        const highDensityList = document.getElementById('high-density-list');
+        const correlatedList = document.getElementById('correlated-list');
+        if (highDensityList) highDensityList.innerHTML = '';
+        if (correlatedList) correlatedList.innerHTML = '';
+    }
+// END: Biến lưu trữ kết quả phân tích
+
 // Bắt đầu toàn bộ mã khi cây DOM đã sẵn sàng
 document.addEventListener('DOMContentLoaded', function () {
     // Dán URL Web App bạn đã triển khai ở Google Apps Script vào đây
@@ -76,16 +89,22 @@ document.addEventListener('DOMContentLoaded', function () {
     if (analysisBtn) {
         analysisBtn.addEventListener('click', () => {
             isAnalysisMode = !isAnalysisMode;
+            const resultsContainer = document.getElementById('analysis-results-container');
+            
             if (isAnalysisMode) {
                 analysisBtn.textContent = 'Tắt Phân Tích';
                 analysisBtn.style.backgroundColor = '#dc3545';
+                resultsContainer.style.display = 'block';
             } else {
                 analysisBtn.textContent = 'Bật Phân Tích';
                 analysisBtn.style.backgroundColor = '#28a745';
+                resultsContainer.style.display = 'none';
+                clearAnalysisResults(); // Dọn dẹp kết quả khi tắt
             }
             masterFilter();
         });
     }
+    
     // --- HÀM VẼ MARKER & POPUP ---
     function renderMarker(markerData) {
         const markerType = markerTypes ? markerTypes[markerData.type] : null;
@@ -217,7 +236,15 @@ document.addEventListener('DOMContentLoaded', function () {
             const details = document.createElement('details');
             details.open = false;
             const summary = document.createElement('summary');
-            summary.innerHTML = `<img src="${typeInfo.icon.options.iconUrl}" width="12" style="margin-right: 5px;"> ${typeInfo.name} (${groupedByType[typeKey].length})`;
+            
+            // --- START SỬA ĐỔI TẠI ĐÂY ---
+            const safeTypeName = typeInfo.name.replace(/"/g, '&quot;'); // Xử lý nếu tên có dấu ngoặc kép
+            summary.innerHTML = `
+                <img src="${typeInfo.icon.options.iconUrl}" width="12" style="margin-right: 5px; flex-shrink: 0;">
+                <span class="pinned-list-type-name" title="${safeTypeName}">${typeInfo.name}</span>
+                <span style="flex-shrink: 0;">(${groupedByType[typeKey].length})</span>
+            `;
+            // --- END SỬA ĐỔI ---
             
             const ul = document.createElement('ul');
             groupedByType[typeKey].forEach(markerData => {
@@ -389,64 +416,77 @@ window.deleteMarker = async function(markerId) {
         }
     }
 
-    function populateTypeManager() {
-        const typeManagerDiv = document.getElementById('add-marker-type-form');
-        let existingTypesContainer = typeManagerDiv.querySelector('#existing-types-container');
-        if (existingTypesContainer) existingTypesContainer.remove();
+function populateTypeManager() {
+    const typeManagerDiv = document.getElementById('add-marker-type-form');
+    let existingTypesContainer = typeManagerDiv.querySelector('#existing-types-container');
+    if (existingTypesContainer) existingTypesContainer.remove();
 
-        existingTypesContainer = document.createElement('div');
-        existingTypesContainer.id = 'existing-types-container';
+    existingTypesContainer = document.createElement('div');
+    existingTypesContainer.id = 'existing-types-container';
 
-        const typeSearchTerm = document.getElementById('type-search-input').value.toLowerCase();
-        const typeCounts = allMarkersData.reduce((acc, marker) => {
-            acc[marker.type] = (acc[marker.type] || 0) + 1;
-            return acc;
-        }, {});
+    const typeSearchTerm = document.getElementById('type-search-input').value.toLowerCase();
+    const typeCounts = allMarkersData.reduce((acc, marker) => {
+        acc[marker.type] = (acc[marker.type] || 0) + 1;
+        return acc;
+    }, {});
 
-        const details = document.createElement('details');
-        details.open = false;
-        const summary = document.createElement('summary');
-        summary.innerHTML = '<h4>Các loại hiện có:</h4>';
-        details.appendChild(summary);
+    const details = document.createElement('details');
+    details.open = false;
+    const summary = document.createElement('summary');
+    summary.innerHTML = '<h4>Các loại hiện có:</h4>';
+    details.appendChild(summary);
 
-        let visibleCount = 0;
-        let hasContent = false;
-        for (const key in markerTypes) {
-            if (markerTypes.hasOwnProperty(key)) {
-                const typeInfo = markerTypes[key];
-                if (typeInfo && typeof typeInfo.name === 'string' && typeInfo.name.toLowerCase().includes(typeSearchTerm)) {
-                    hasContent = true;
-                    visibleCount++;
-                    const count = typeCounts[key] || 0;
-                    const typeItem = document.createElement('div');
-                    typeItem.className = 'type-item';
-                    typeItem.innerHTML = `
-                        <span class="type-name-wrapper"><img src="${typeInfo.icon.options.iconUrl}" width="12" style="margin-right: 8px;"> ${typeInfo.name}</span>
-                        <span class="type-item-actions">
-                            <button class="edit-type-btn" data-type="${key}" title="Đổi tên loại"><i class="fa-solid fa-pencil"></i></button>
-                            <button class="delete-type-btn" data-type="${key}" title="Xóa loại này"><i class="fa-solid fa-xmark"></i></button>
-                        </span>`;
-                    details.appendChild(typeItem);
-                }
+    // --- START: Thêm thẻ div để bao bọc và tạo thanh cuộn ---
+    const listWrapper = document.createElement('div');
+    listWrapper.className = 'type-list-scrollable';
+    // --- END: Thêm thẻ div ---
+
+    let visibleCount = 0;
+    let hasContent = false;
+    for (const key in markerTypes) {
+        if (markerTypes.hasOwnProperty(key)) {
+            const typeInfo = markerTypes[key];
+            if (typeInfo && typeof typeInfo.name === 'string' && typeInfo.name.toLowerCase().includes(typeSearchTerm)) {
+                hasContent = true;
+                visibleCount++;
+                const count = typeCounts[key] || 0;
+                const typeItem = document.createElement('div');
+                typeItem.className = 'type-item';
+                typeItem.innerHTML = `
+                    <span class="type-name-wrapper"><img src="${typeInfo.icon.options.iconUrl}" width="12" style="margin-right: 8px;"> ${typeInfo.name}</span>
+                    <span class="type-item-actions">
+                        <button class="edit-type-btn" data-type="${key}" title="Đổi tên loại"><i class="fa-solid fa-pencil"></i></button>
+                        <button class="delete-type-btn" data-type="${key}" title="Xóa loại này"><i class="fa-solid fa-xmark"></i></button>
+                    </span>`;
+                // --- START: Thêm mục vào listWrapper thay vì details ---
+                listWrapper.appendChild(typeItem);
+                // --- END: Thêm mục vào listWrapper ---
             }
         }
-
-        const mainHeader = document.getElementById('type-manager-header');
-        if (mainHeader) {
-            mainHeader.innerHTML = `<i class="fa-solid fa-tags"></i> Quản lý loại địa điểm (${visibleCount})`;
-        }
-        
-        if (hasContent) {
-            existingTypesContainer.appendChild(details);
-            typeManagerDiv.appendChild(existingTypesContainer);
-            details.querySelectorAll('.delete-type-btn').forEach(button => {
-                button.addEventListener('click', function() { deleteMarkerType(this.dataset.type); });
-            });
-            details.querySelectorAll('.edit-type-btn').forEach(button => {
-                button.addEventListener('click', function() { renameMarkerType(this.dataset.type); });
-            });
-        }
     }
+    
+    // --- START: Thêm listWrapper vào details ---
+    if(hasContent) {
+        details.appendChild(listWrapper);
+    }
+    // --- END: Thêm listWrapper vào details ---
+
+    const mainHeader = document.getElementById('type-manager-header');
+    if (mainHeader) {
+        mainHeader.innerHTML = `<i class="fa-solid fa-tags"></i> Quản lý loại địa điểm (${visibleCount})`;
+    }
+    
+    if (hasContent) {
+        existingTypesContainer.appendChild(details);
+        typeManagerDiv.appendChild(existingTypesContainer);
+        details.querySelectorAll('.delete-type-btn').forEach(button => {
+            button.addEventListener('click', function() { deleteMarkerType(this.dataset.type); });
+        });
+        details.querySelectorAll('.edit-type-btn').forEach(button => {
+            button.addEventListener('click', function() { renameMarkerType(this.dataset.type); });
+        });
+    }
+}
 
     function saveMarkerTypesToStorage() {
         const storableTypes = {};
@@ -1237,6 +1277,48 @@ window.deleteMarker = async function(markerId) {
     L.drawLocal.edit.toolbar.buttons.remove = 'Xóa các lớp.';
     L.drawLocal.edit.toolbar.buttons.removeDisabled = 'Không có lớp nào để xóa.';
 
+        // START: Added Geolocation Logic for Map Buttons
+        let locationMarker = null;
+        let wasPinAction = false; // Flag to check if the pin button was clicked
+
+        document.getElementById('find-me-btn-map').addEventListener('click', () => {
+            wasPinAction = false;
+            map.locate({ setView: true, maxZoom: 16, enableHighAccuracy: true });
+        });
+
+        document.getElementById('pin-my-location-btn-map').addEventListener('click', () => {
+            if (!currentUser || (currentUser.Role !== 'Admin' && currentUser.Role !== 'Editor')) {
+                alert("Bạn không có quyền thêm ghim.");
+                return;
+            }
+            wasPinAction = true;
+            map.locate({ setView: false, enableHighAccuracy: true });
+        });
+
+        map.on('locationfound', function(e) {
+            const radius = e.accuracy;
+            
+            if (locationMarker) {
+                map.removeLayer(locationMarker);
+            }
+
+            locationMarker = L.layerGroup([
+                L.circle(e.latlng, {radius: radius, weight: 1}),
+                L.marker(e.latlng)
+            ]).addTo(map);
+            
+            if (wasPinAction) {
+                map.flyTo(e.latlng, 17); // Bay tới vị trí trước khi mở popup
+                openAddMarkerPopup(e.latlng.lat, e.latlng.lng);
+                wasPinAction = false; 
+            }
+        });
+
+        map.on('locationerror', function(e) {
+            alert("Lỗi định vị: " + e.message + "\nVui lòng cấp quyền truy cập vị trí cho trình duyệt.");
+            wasPinAction = false;
+        });
+        // END: Added Geolocation Logic for Map Buttons    
     // 2. Tạo một LayerGroup để chứa các đối tượng được vẽ
     const drawnItems = new L.FeatureGroup();
     map.addLayer(drawnItems);
@@ -1436,13 +1518,28 @@ window.deleteMarker = async function(markerId) {
         // Ẩn/hiện tất cả các phần tử theo quyền
         const adminOnlyElements = document.querySelectorAll('.admin-only');
         const editorOnlyElements = document.querySelectorAll('.editor-only');
-        
+        const loggedInOnlyElements = document.querySelectorAll('.logged-in-only');
+
+        // Ẩn tất cả các nhóm theo mặc định
         adminOnlyElements.forEach(el => el.style.display = 'none');
         editorOnlyElements.forEach(el => el.style.display = 'none');
-        
+        loggedInOnlyElements.forEach(el => el.style.display = 'none');
+
+        // Nếu người dùng đã đăng nhập, bắt đầu hiển thị các phần tử tương ứng
         if (currentUser) {
+            // Hiện các phần tử cho tất cả người dùng đã đăng nhập
+            loggedInOnlyElements.forEach(el => {
+                // Trường hợp đặc biệt cho container nút định vị vì nó dùng 'flex'
+                if (el.id === 'location-controls-container') {
+                    el.style.display = 'flex';
+                } else {
+                    el.style.display = 'block'; // Mặc định là 'block' cho các phần tử khác
+                }
+            });
+            
+            // Hiện các phần tử theo vai trò (Role)
             if (currentUser.Role === 'Admin') {
-                adminOnlyElements.forEach(el => el.style.display = 'block'); // hoặc 'flex', 'grid' tùy element
+                adminOnlyElements.forEach(el => el.style.display = 'block');
                 editorOnlyElements.forEach(el => el.style.display = 'block');
             } else if (currentUser.Role === 'Editor') {
                 editorOnlyElements.forEach(el => el.style.display = 'block');
@@ -1451,6 +1548,7 @@ window.deleteMarker = async function(markerId) {
         
         // Vô hiệu hóa/Kích hoạt các chức năng không có class
         document.getElementById('save-btn').style.display = (currentUser && (currentUser.Role === 'Admin' || currentUser.Role === 'Editor')) ? 'block' : 'none';
+        
         // Vô hiệu hóa/Kích hoạt thanh công cụ vẽ
         const drawToolbar = document.querySelector('.leaflet-draw');
         if (drawToolbar) {
@@ -1471,6 +1569,8 @@ window.deleteMarker = async function(markerId) {
         map.keyboard.disable();
         if (map.tap) map.tap.disable();
         document.getElementById('map').style.cursor = 'default';
+        document.getElementById('location-controls-container').style.display = 'none';
+        Array.from(document.getElementsByClassName('leaflet-control-container')).forEach(el => el.style.display = 'none');
     }
 
     function enableMapInteraction() {
@@ -1482,6 +1582,8 @@ window.deleteMarker = async function(markerId) {
         map.keyboard.enable();
         if (map.tap) map.tap.enable();
         document.getElementById('map').style.cursor = 'grab';
+        document.getElementById('location-controls-container').style.display = 'flex';
+        Array.from(document.getElementsByClassName('leaflet-control-container')).forEach(el => el.style.display = 'block');
     }
 
     function lockMap() {
@@ -1503,6 +1605,7 @@ window.deleteMarker = async function(markerId) {
         drawnItems.clearLayers();
         updateUI(); // Xóa sạch sidebar
         disableMapInteraction();
+
     }
 
     function unlockMap() {

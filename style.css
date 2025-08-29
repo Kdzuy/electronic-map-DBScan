@@ -81,7 +81,16 @@ button {
 
 /* DANH SÁCH ĐỊA ĐIỂM ĐÃ GHIM */
 #pinned-list-container details { border: 1px solid #ddd; border-radius: 4px; margin-bottom: 5px; }
-#pinned-list-container summary { padding: 10px; cursor: pointer; font-weight: bold; background: #f1f1f1; }
+#pinned-list-container summary { 
+    padding: 10px; 
+    cursor: pointer; 
+    font-weight: bold; 
+    background: #f1f1f1; 
+    display: flex;
+    align-items: center;
+    width: 100%;
+    overflow: hidden;
+}
 #pinned-list-container ul { list-style: none; padding: 0; margin: 0; max-height: 150px; overflow-y: auto; }
 #pinned-list-container li { 
     padding: 10px; 
@@ -239,13 +248,16 @@ button {
     border-radius: 4px;
     background: #fff;
     border: 1px solid #eee;
-}
-.type-item {
-    display: flex;
-    align-items: center;
     flex-grow: 1;
-    overflow: hidden; /* Bắt buộc để text-overflow hoạt động */
-    min-width: 0;     /* SỬA LỖI: Cho phép flex item co lại nhỏ hơn nội dung của nó */
+    overflow: hidden; 
+    min-width: 0; 
+}
+.type-item-actions { flex-shrink: 0; }
+.type-item .type-name-wrapper {
+    white-space: nowrap; 
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0; /* Cho phép co lại trong flexbox */
 }
 .type-item img {
     width: 12px !important;
@@ -788,4 +800,126 @@ h4{
 }
 .leaflet-popup-tip {
     border-top-color: white; /* Đồng bộ màu với popup */
+}
+
+/* --- Location Control Buttons on Map --- */
+#location-controls-container {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000; /* Dưới sidebar (z-index: 1001) */
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#location-controls-container button {
+    width: 45px;
+    height: 45px;
+    background-color: white;
+    color: #333;
+    border: none;
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease;
+}
+
+#location-controls-container button:hover {
+    background-color: #f4f4f4;
+}
+
+/* --- Analysis Results List Styling --- */
+.analysis-list {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #eee;
+    border-radius: 4px;
+}
+
+.analysis-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.analysis-list-item:last-child {
+    border-bottom: none;
+}
+
+.analysis-list-item:hover {
+    background-color: #e9ecef;
+}
+
+.analysis-list-item span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-right: 10px;
+}
+
+.analysis-list-item .count-badge {
+    background-color: #007bff;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: bold;
+    flex-shrink: 0;
+}   
+
+/* --- Styling for Analysis List Icons --- */
+.analysis-list-item {
+    gap: 10px;
+}
+
+.analysis-list-icon {
+    width: 20px;
+    height: 32px;
+    object-fit: contain; /* Đảm bảo icon không bị méo */
+    flex-shrink: 0; /* Ngăn icon bị co lại */
+}
+
+.analysis-list-icon.fa-icon-span {
+    display: inline-flex;
+    align-items: center;
+    /* justify-content: center; */
+    height: 32px; /* Đồng bộ chiều cao */
+    font-size: 16px;
+    color: #555;
+}
+
+.analysis-item-name {
+    flex-grow: 1; /* Cho phép phần tử này co giãn để lấp đầy không gian trống */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.summary-flex-container {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    overflow: hidden;
+}
+.pinned-list-type-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0 5px; /* Thêm khoảng cách nhỏ */
+}
+
+.type-list-scrollable {
+    max-height: 250px; /* Bạn có thể thay đổi chiều cao này */
+    overflow-y: auto;  /* Tự động hiển thị thanh cuộn dọc khi cần */
+    padding-right: 5px; /* Thêm chút đệm để thanh cuộn không che nội dung */
+    border-top: 1px solid #eee;
 }

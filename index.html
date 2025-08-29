@@ -29,11 +29,21 @@
             <div id="initial-view-manager" class="form-group"> 
                 <h4><i class="fa-solid fa-map-location-dot"></i> Vị Trí Khởi Tạo</h4>
                 <input type="text" id="initial-view-input" placeholder="Tự động lưu" disabled>
-                <button id="save-view-btn" class="btn-action" style="margin-top: 5px;">Lưu Vị Trí Hiện Tại</button>
+                <button id="save-view-btn" class="btn-action" style="margin-top: 5px;">Vị trí khi hiện</button>
                 <hr>
                 <div id="hotspot-analysis-manager" class="form-group">
                     <h4><i class="fa-solid fa-fire-extinguisher"></i> Phân tích tác động</h4>
                     <button id="toggle-analysis-btn" class="btn-action">Bật Phân Tích</button>
+                    <div id="analysis-results-container" style="display: none; margin-top: 15px;">
+                        <div>
+                            <h5><i class="fa-solid fa-fire"></i> Vùng Mật Độ Cao</h5>
+                            <div id="high-density-list" class="analysis-list"></div>
+                        </div>
+                        <div style="margin-top: 15px;">
+                            <h5><i class="fa-solid fa-link"></i> Vùng Tương Quan</h5>
+                            <div id="correlated-list" class="analysis-list"></div>
+                        </div>
+                    </div>
                 </div>
                 <div id="add-by-coords-manager" class="form-group editor-only">
                     <h4><i class="fa-solid fa-location-crosshairs"></i> Thêm ghim bằng tọa độ</h4>
@@ -117,6 +127,14 @@
             <input type="password" id="password-input" name="password" autocomplete="current-password" class="form-control" placeholder="Mật khẩu">
             <button id="login-btn" class="btn-action">Đăng nhập</button>
         </div>
+    </div>
+    <div id="location-controls-container">
+        <button id="find-me-btn-map" title="Tìm vị trí của tôi">
+            <i class="fa-solid fa-location-crosshairs"></i>
+        </button>
+        <button id="pin-my-location-btn-map" class="editor-only" title="Ghim vị trí của tôi">
+            <i class="fa-solid fa-thumbtack"></i>
+        </button>
     </div>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
