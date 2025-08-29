@@ -12,6 +12,7 @@
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
     <link rel="stylesheet" href="style.css">
+
 </head>
 <body>
     <div id="map-blocker">
@@ -34,6 +35,10 @@
                 <div id="hotspot-analysis-manager" class="form-group">
                     <h4><i class="fa-solid fa-fire-extinguisher"></i> Phân tích tác động</h4>
                     <button id="toggle-analysis-btn" class="btn-action">Bật Phân Tích</button>
+                    <div id="heatmap-manager" class="form-group" style="margin-top: 10px;">
+                        <h4><i class="fa-solid fa-fire-flame-curved"></i> Bản đồ nhiệt</h4>
+                        <button id="toggle-heatmap-btn" class="btn-action">Bật Heatmap</button>
+                    </div>
                     <div id="analysis-results-container" style="display: none; margin-top: 15px;">
                         <div>
                             <h5><i class="fa-solid fa-fire"></i> Vùng Mật Độ Cao</h5>
@@ -43,6 +48,7 @@
                             <h5><i class="fa-solid fa-link"></i> Vùng Tương Quan</h5>
                             <div id="correlated-list" class="analysis-list"></div>
                         </div>
+                        
                     </div>
                 </div>
                 <div id="add-by-coords-manager" class="form-group editor-only">
@@ -139,6 +145,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
     <script src="script.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/density-clustering@1.3.0/lib/DBSCAN.min.js"></script>
     <script src="analysis.js"></script>

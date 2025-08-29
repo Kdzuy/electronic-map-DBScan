@@ -11,9 +11,10 @@ let isPopupOpen = false;
 let isAnalysisMode = false;
 let interactionLayerGroup;
 let allMarkersData = [];
-// START: Biến lưu trữ kết quả phân tích
 let highDensityClusters = [];
 let correlatedClusters = [];
+let isHeatmapMode = false; // Biến mới cho trạng thái heatmap
+let heatLayer = null; // Biến mới để giữ lớp heatmap
     function clearAnalysisResults() {
         highDensityClusters = [];
         correlatedClusters = [];
@@ -79,11 +80,49 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // let allMarkersData = [];
 
-    map = L.map('map', { maxZoom: 17 }).setView([initialView.lat, initialView.lng], initialView.zoom);
+    // map = L.map('map', { maxZoom: 17 }).setView([initialView.lat, initialView.lng], initialView.zoom);
+    // disableMapInteraction();
+    // markerLayerGroup.addTo(map);
+
+    // L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 17, attribution: '© <a href="http://openstreetmap.org/copyright">OpenStreetMap</a>' }).addTo(map);
+    // 1. Định nghĩa các lớp bản đồ (base layers)
+    const streetMap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 17,
+        attribution: '© <a href="http://openstreetmap.org/copyright">OpenStreetMap</a>'
+    });
+
+    const satelliteMap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 17,
+        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+    });
+
+    const topoMap = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+        maxZoom: 17,
+        attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
+    });
+
+    const baseLayers = {
+        "Bản đồ đường phố": streetMap,
+        "Ảnh vệ tinh": satelliteMap,
+        "Bản đồ địa hình": topoMap
+    };
+
+    // 2. Khởi tạo bản đồ và đặt lớp mặc định là bản đồ đường phố
+    map = L.map('map', {
+        maxZoom: 17,
+        layers: [streetMap] // Lớp mặc định khi tải
+    }).setView([initialView.lat, initialView.lng], initialView.zoom);
+
     disableMapInteraction();
+
+    // 3. Định nghĩa các lớp phủ (overlays) như các điểm đã ghim
+    const overlays = {
+        "Các địa điểm đã ghim": markerLayerGroup
+    };
     markerLayerGroup.addTo(map);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 17, attribution: '© <a href="http://openstreetmap.org/copyright">OpenStreetMap</a>' }).addTo(map);
+    // 4. Thêm bộ điều khiển lớp vào bản đồ
+    L.control.layers(baseLayers, overlays, { position: 'bottomleft' }).addTo(map);
     //quản lý analysis
     const analysisBtn = document.getElementById('toggle-analysis-btn');
     if (analysisBtn) {
@@ -95,11 +134,20 @@ document.addEventListener('DOMContentLoaded', function () {
                 analysisBtn.textContent = 'Tắt Phân Tích';
                 analysisBtn.style.backgroundColor = '#dc3545';
                 resultsContainer.style.display = 'block';
+
+                // Tắt chế độ heatmap nếu đang bật
+                if (isHeatmapMode) {
+                    isHeatmapMode = false;
+                    const heatmapBtn = document.getElementById('toggle-heatmap-btn');
+                    heatmapBtn.textContent = 'Bật Bản Đồ Nhiệt';
+                    heatmapBtn.style.backgroundColor = '#28a745';
+                }
+
             } else {
                 analysisBtn.textContent = 'Bật Phân Tích';
                 analysisBtn.style.backgroundColor = '#28a745';
                 resultsContainer.style.display = 'none';
-                clearAnalysisResults(); // Dọn dẹp kết quả khi tắt
+                clearAnalysisResults();
             }
             masterFilter();
         });
@@ -511,45 +559,70 @@ function populateTypeManager() {
     }
 
     // 1. HÀM LỌC TỔNG: Trung tâm xử lý mọi bộ lọc
-    function masterFilter() {
-       
-        // Nếu không ở chế độ phân tích, xóa layer tương tác và chạy logic lọc thông thường
-        if (interactionLayerGroup) {
-            map.removeLayer(interactionLayerGroup);
-        }
-
-        const searchTerm = document.getElementById('search-pinned') ? document.getElementById('search-pinned').value.toLowerCase() : '';
-        const isAdmin = currentUser && currentUser.Role === 'Admin';
-
-        // Lọc dữ liệu từ allMarkersData dựa trên các biến trạng thái toàn cục
-        let filteredData = allMarkersData.filter(marker => {
-            if (!marker) return false;
-
-            const typeMatch = selectedTypeKeys.has(marker.type);
-            const userMatch = isAdmin ? selectedUserOwners.has(marker.Owner) : true;
-            
-            return typeMatch && userMatch;
-        });
-
-        // Áp dụng bộ lọc tìm kiếm cuối cùng
-        if (searchTerm) {
-            filteredData = filteredData.filter(marker => {
-                const nameMatch = typeof marker.name === 'string' && marker.name.toLowerCase().includes(searchTerm);
-                const descMatch = typeof marker.desc === 'string' && marker.desc.toLowerCase().includes(searchTerm);
-                return nameMatch || descMatch;
-            });
-        }
-
-        // Cập nhật bản đồ và danh sách ghim
-        markerLayerGroup.clearLayers();
-        filteredData.forEach(renderMarker);
-        populatePinnedList(filteredData);
-                // Nếu chế độ phân tích được bật, gọi hàm phân tích từ file mới
-        if (isAnalysisMode) {
-            runDBScanAnalysis();
-            return; // Dừng lại, không chạy tiếp logic lọc thông thường
-        }
+function masterFilter() {
+    // Nếu không ở chế độ phân tích, xóa layer tương tác
+    if (interactionLayerGroup && !isAnalysisMode) {
+        map.removeLayer(interactionLayerGroup);
     }
+
+    const searchTerm = document.getElementById('search-pinned') ? document.getElementById('search-pinned').value.toLowerCase() : '';
+    const isAdmin = currentUser && currentUser.Role === 'Admin';
+
+    // Lọc dữ liệu từ allMarkersData
+    let filteredData = allMarkersData.filter(marker => {
+        if (!marker) return false;
+        const typeMatch = selectedTypeKeys.has(marker.type);
+        const userMatch = isAdmin ? selectedUserOwners.has(marker.Owner) : true;
+        return typeMatch && userMatch;
+    });
+
+    if (searchTerm) {
+        filteredData = filteredData.filter(marker => 
+            (marker.name && marker.name.toLowerCase().includes(searchTerm)) || 
+            (marker.desc && marker.desc.toLowerCase().includes(searchTerm))
+        );
+    }
+
+    // --- START: LOGIC HIỂN THỊ MỚI ---
+
+    // Luôn dọn dẹp các lớp cũ trước khi vẽ
+    markerLayerGroup.clearLayers();
+    if (heatLayer) {
+        map.removeLayer(heatLayer);
+        heatLayer = null;
+    }
+
+    // Cập nhật danh sách ghim bên sidebar
+    populatePinnedList(filteredData);
+
+    // Quyết định xem nên vẽ heatmap hay các ghim riêng lẻ
+    if (isHeatmapMode) {
+        if (filteredData.length > 0) {
+            const heatPoints = filteredData.map(marker => [marker.lat, marker.lng]);
+            heatLayer = L.heatLayer(heatPoints, {
+                radius: 25,
+                blur: 15,
+                maxZoom: 17,
+                // --- START: THÊM DÒNG NÀY ĐỂ TÙY CHỈNH MÀU SẮC ---
+                gradient: {
+                    0.0: 'transparent',  // Mật độ thấp nhất: trong suốt
+                    0.2: 'red',          // Bắt đầu chuyển sang đỏ
+                    0.4: 'darkred',      // Đỏ đậm hơn
+                    0.6: '#8B0000',      // Rất đậm
+                    1.0: '#4B0000'       // Mật độ cao nhất: đỏ siêu đậm
+                }
+                // --- END: THÊM DÒNG NÀY ---
+            }).addTo(map);
+        }
+    } else if (isAnalysisMode) {
+        // Chạy phân tích DBSCAN nếu chế độ này đang bật
+        runDBScanAnalysis(filteredData);
+    } else {
+        // Mặc định: vẽ các ghim riêng lẻ
+        filteredData.forEach(renderMarker);
+    }
+    // --- END: LOGIC HIỂN THỊ MỚI ---
+}
 
     // 2. HÀM CẬP NHẬT GIAO DIỆN BỘ LỌC LOẠI
     function populateTypeFilter() {
@@ -1183,7 +1256,32 @@ function populateTypeManager() {
         setupFilterEventListeners();
         // 2. Tải dữ liệu ghim
         // await loadMarkers(); // Dòng này được gọi bên trong checkSession() hoặc handleLogin() nên không cần ở đây
+            // Quản lý nút Heatmap
+        const heatmapBtn = document.getElementById('toggle-heatmap-btn');
+        if (heatmapBtn) {
+            heatmapBtn.addEventListener('click', () => {
+                isHeatmapMode = !isHeatmapMode;
+                if (isHeatmapMode) {
+                    heatmapBtn.textContent = 'Tắt Bản đồ Nhiệt';
+                    heatmapBtn.style.backgroundColor = '#dc3545';
 
+                    // Tắt chế độ phân tích nếu đang bật
+                    if (isAnalysisMode) {
+                        isAnalysisMode = false;
+                        const analysisBtn = document.getElementById('toggle-analysis-btn');
+                        const resultsContainer = document.getElementById('analysis-results-container');
+                        analysisBtn.textContent = 'Bật Phân Tích';
+                        analysisBtn.style.backgroundColor = '#28a745';
+                        resultsContainer.style.display = 'none';
+                        clearAnalysisResults();
+                    }
+                } else {
+                    heatmapBtn.textContent = 'Bật Bản đồ Nhiệt';
+                    heatmapBtn.style.backgroundColor = '#28a745';
+                }
+                masterFilter();
+            });
+        }
         // 3. Gắn sự kiện cho các nút Đăng nhập / Đăng xuất
         document.getElementById('auth-toggle-btn').addEventListener('click', () => {
             document.getElementById('login-popup').classList.toggle('show');
