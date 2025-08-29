@@ -15,7 +15,7 @@ const DBSCAN_MIN_POINTS = 3;
 function runDBScanAnalysis(visibleMarkers) {
     // --- NÂNG CẤP AN TOÀN ---
     if (!visibleMarkers) {
-        console.log("runDBScanAnalysis không nhận được dữ liệu, đang tự lấy từ map layer.");
+        // console.log("runDBScanAnalysis không nhận được dữ liệu, đang tự lấy từ map layer.");
         const filteredLayers = markerLayerGroup.getLayers();
         visibleMarkers = filteredLayers.map(layer => layer.markerData);
     }
