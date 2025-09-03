@@ -816,7 +816,7 @@ h4{
 #location-controls-container button {
     width: 45px;
     height: 45px;
-    background-color: white;
+    /* background-color: white; */
     color: #333;
     border: none;
     border-radius: 50%;
@@ -829,9 +829,9 @@ h4{
     transition: background-color 0.2s ease;
 }
 
-#location-controls-container button:hover {
+/* #location-controls-container button:hover {
     background-color: #f4f4f4;
-}
+} */
 
 /* --- Analysis Results List Styling --- */
 .analysis-list {
@@ -1033,4 +1033,31 @@ input[type=range]::-moz-range-thumb {
     input[type=range] {
         width: 100%;
     }
+}
+
+#location-controls-container button {
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, opacity 0.2s;
+}
+
+/* Màu riêng cho nút Heatmap khi active */
+#toggle-heatmap-btn.active {
+    background-color: #e67e22; /* Màu cam cháy */
+}
+#toggle-timeline-btn {
+    background-color:#3498db; /* Màu xanh dương nhạt */
+}
+/* Màu riêng cho nút Timeline khi active */
+#toggle-timeline-btn.active {
+    background-color:#28a745; /* Màu xanh dương đậm hơn */
+}
+
+/* Hiệu ứng khi di chuột qua nút đang active */
+#location-controls-container button.active:hover {
+    opacity: 0.85; /* Giảm độ trong suốt một chút để có phản hồi */
+}
+#location-controls-container button:hover {
+    opacity: 0.85; /* Giảm độ trong suốt một chút để có phản hồi */
+}
+#toggle-heatmap-btn {
+    background-color: #dc3545;
 }

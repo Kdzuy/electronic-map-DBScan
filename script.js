@@ -169,8 +169,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (isHeatmapMode) {
                     isHeatmapMode = false;
                     const heatmapBtn = document.getElementById('toggle-heatmap-btn');
-                    heatmapBtn.textContent = 'Bật Bản Đồ Nhiệt';
-                    heatmapBtn.style.backgroundColor = '#28a745';
+                    // heatmapBtn.textContent = 'Bật Bản Đồ Nhiệt';
+                    heatmapBtn.style.backgroundColor = '#dc3545';
                 }
 
             } else {
@@ -1300,9 +1300,9 @@ function masterFilter() {
         const toggleTimelineBtn = document.getElementById('toggle-timeline-btn');
         const timelineContainer = document.getElementById('timeline-container');
 
-            toggleTimelineBtn.addEventListener('click', () => {
+        toggleTimelineBtn.addEventListener('click', () => {
             const isVisible = timelineContainer.classList.toggle('visible');
-
+            toggleTimelineBtn.classList.toggle('active', isVisible);
             // Nếu người dùng vừa tắt thanh trượt
             if (!isVisible) {
                 // SỬA LỖI: Thêm điều kiện kiểm tra timelineMaxDate có tồn tại không
@@ -1323,8 +1323,8 @@ function masterFilter() {
             heatmapBtn.addEventListener('click', () => {
                 isHeatmapMode = !isHeatmapMode;
                 if (isHeatmapMode) {
-                    heatmapBtn.textContent = 'Tắt Bản đồ Nhiệt';
-                    heatmapBtn.style.backgroundColor = '#dc3545';
+                    // heatmapBtn.textContent = 'Tắt Bản đồ Nhiệt';
+                    heatmapBtn.style.backgroundColor = '#28a745';
 
                     // Tắt chế độ phân tích nếu đang bật
                     if (isAnalysisMode) {
@@ -1337,8 +1337,8 @@ function masterFilter() {
                         clearAnalysisResults();
                     }
                 } else {
-                    heatmapBtn.textContent = 'Bật Bản đồ Nhiệt';
-                    heatmapBtn.style.backgroundColor = '#28a745';
+                    // heatmapBtn.textContent = 'Bật Bản đồ Nhiệt';
+                    heatmapBtn.style.backgroundColor = '#dc3545';
                 }
                 masterFilter();
             });
