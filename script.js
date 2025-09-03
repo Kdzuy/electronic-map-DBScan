@@ -1889,8 +1889,20 @@ function masterFilter() {
             
             // Điều kiện lọc theo người tạo (chỉ áp dụng cho Admin)
             const ownerMatch = isAdmin ? selectedUserOwners.has(marker.Owner) : true;
-            
-            return typeMatch && ownerMatch;
+            const timelineMatch = (() => {
+            // Nếu thanh trượt không hoạt động hoặc không hiển thị, luôn trả về true
+                const timelineContainer = document.getElementById('timeline-container');
+                if (!timelineContainer.classList.contains('visible') || !selectedTimelineStartDate || !selectedTimelineEndDate) {
+                    return true;
+                }
+                // Nếu ghim không có ngày, luôn hiển thị
+                if (!marker.inclusionDate) return true;
+                
+                const markerDate = new Date(marker.inclusionDate);
+                // So sánh ngày (không tính giờ)
+                return markerDate.setHours(0,0,0,0) <= selectedTimelineEndDate.setHours(0,0,0,0);
+            })();
+            return typeMatch && ownerMatch && timelineMatch;
         });
 
         // Tiếp tục lọc theo từ khóa tìm kiếm trên kết quả đã có
