@@ -1689,7 +1689,8 @@ function masterFilter() {
         document.getElementById('map-blocker').classList.remove('hidden');
         document.getElementById('sidebar').classList.remove('visible', 'open');
         document.getElementById('toggle-btn').classList.remove('visible', 'shifted');
-
+        document.getElementById('export-excel-btn').removeEventListener('click', exportVisibleMarkersToExcel);
+        // document.getElementById('test-filter-btn').removeEventListener('click', getFilteredData);
         // ---- BỔ SUNG SỬA LỖI ----
         // Tìm đến icon và đặt lại về trạng thái ban đầu (biểu tượng menu)
         const toggleBtnIcon = document.getElementById('toggle-btn').querySelector('i');
@@ -1710,6 +1711,12 @@ function masterFilter() {
         document.getElementById('map-blocker').classList.add('hidden');
         document.getElementById('sidebar').classList.add('visible');
         document.getElementById('toggle-btn').classList.add('visible');
+        document.getElementById('export-excel-btn').addEventListener('click', exportVisibleMarkersToExcel);
+        // document.getElementById('test-filter-btn').addEventListener('click', () => {
+            
+        //     console.table('Danh sách đầy đủ các ghim đã lọc:', fullFilteredList);
+        //     alert(`Tìm thấy tổng cộng ${fullFilteredList.length} ghim khớp với bộ lọc.`);
+        // })
         enableMapInteraction();
         applyPermissions(); // Áp dụng lại quyền sau khi mở khóa
     }
@@ -1727,5 +1734,117 @@ function masterFilter() {
         }
         updateAuthUI(); // Luôn cập nhật giao diện đăng nhập
     }
+    function exportVisibleMarkersToExcel() {
+        // THAY ĐỔI QUAN TRỌNG: Lấy dữ liệu từ hàm lọc thay vì từ màn hình bản đồ
+        const markersToExport = getFilteredData();
+
+        if (markersToExport.length === 0) {
+            // Cập nhật lại thông báo cho chính xác
+            alert("Không có ghim nào khớp với bộ lọc để trích xuất.");
+            return;
+        }
+
+        // Tạo nội dung bảng HTML cho tệp Excel
+        let tableHTML = `
+            <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+            <head><meta charset='UTF-8'></head>
+            <body>
+            <table>
+                <thead>
+                    <tr>
+                        <th>STT</th>
+                        <th>Tên ghim</th>
+                        <th>Mô tả</th>
+                        <th>Link</th>
+                        <th>Ngày vào diện</th>
+                        <th>Tọa độ</th>
+                        <th>Tài khoản tạo</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        markersToExport.forEach((marker, index) => {
+            // Làm sạch dữ liệu trước khi thêm vào bảng
+            const name = marker.name || '';
+            const desc = marker.desc || '';
+            const linkUrl = marker.linkUrl || '';
+            const inclusionDate = marker.inclusionDate || '';
+            const coords = `${marker.lat}, ${marker.lng}`;
+            const owner = marker.Owner || '';
+
+            tableHTML += `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${name.replace(/</g, "<").replace(/>/g, ">")}</td>
+                    <td>${desc.replace(/</g, "<").replace(/>/g, ">")}</td>
+                    <td>${linkUrl.replace(/</g, "<").replace(/>/g, ">")}</td>
+                    <td>${inclusionDate}</td>
+                    <td>${coords}</td>
+                    <td>${owner.replace(/</g, "<").replace(/>/g, ">")}</td>
+                </tr>
+            `;
+        });
+
+        tableHTML += `
+                </tbody>
+            </table>
+            </body>
+            </html>
+        `;
+
+        // Tạo tên tệp với ngày tháng năm hiện tại
+        const today = new Date();
+        const day = String(today.getDate()).padStart(2, '0');
+        const month = String(today.getMonth() + 1).padStart(2, '0'); // Tháng trong JS bắt đầu từ 0
+        const year = today.getFullYear();
+        const fileName = `DS_ghim_${day}${month}${year}.xls`;
+
+        // Tạo Blob và link để tải xuống
+        const blob = new Blob([tableHTML], {
+            type: 'application/vnd.ms-excel;charset=utf-8'
+        });
+
+        const link = document.createElement('a');
+        if (navigator.msSaveBlob) { // Dành cho IE 10+
+            navigator.msSaveBlob(blob, fileName);
+        } else {
+            link.href = URL.createObjectURL(blob);
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href); // Giải phóng bộ nhớ
+        }
+    }
+    function getFilteredData() {
+        const isAdmin = currentUser && currentUser.Role === 'Admin';
+        const searchTerm = document.getElementById('search-pinned') ? document.getElementById('search-pinned').value.toLowerCase() : '';
+
+        // Bắt đầu lọc từ danh sách gốc 'allMarkersData'
+        let filteredMarkers = allMarkersData.filter(marker => {
+            if (!marker) return false;
+            
+            // Điều kiện lọc theo loại ghim
+            const typeMatch = selectedTypeKeys.has(marker.type);
+            
+            // Điều kiện lọc theo người tạo (chỉ áp dụng cho Admin)
+            const ownerMatch = isAdmin ? selectedUserOwners.has(marker.Owner) : true;
+            
+            return typeMatch && ownerMatch;
+        });
+
+        // Tiếp tục lọc theo từ khóa tìm kiếm trên kết quả đã có
+        if (searchTerm) {
+            filteredMarkers = filteredMarkers.filter(marker =>
+                (marker.name && marker.name.toLowerCase().includes(searchTerm)) ||
+                (marker.desc && marker.desc.toLowerCase().includes(searchTerm))
+            );
+        }
+
+        // Trả về danh sách cuối cùng
+        return filteredMarkers;
+    }
+
     initializeApp();
 });
