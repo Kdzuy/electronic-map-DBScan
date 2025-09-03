@@ -51,7 +51,6 @@ document.addEventListener('DOMContentLoaded', function () {
         // Cơ quan quan trọng
         'https://cdn-icons-png.flaticon.com/512/1191/1191618.png',   // Trụ sở Công an
         'https://cdn-icons-png.flaticon.com/512/799/799355.png',     // Tòa án, Viện kiểm sát
-        'https://cdn-icons-png.flaticon.com/512/2989/2989803.png',   // Cơ quan chính quyền
         'https://cdn-icons-png.flaticon.com/512/2045/2045655.png',   // Đơn vị quân đội
 
         // Sự kiện ANTT
