@@ -1920,8 +1920,6 @@ function masterFilter() {
         const timelineContainer = document.getElementById('timeline-container');
         const toggleBtn = document.getElementById('toggle-timeline-btn');
         const slider = document.getElementById('timeline-slider');
-        const startDateLabel = document.getElementById('timeline-date-label-start');
-        const endDateLabel = document.getElementById('timeline-date-label-end');
 
         // Lấy tất cả các ngày hợp lệ và chuyển thành timestamp
         const dates = allMarkersData
