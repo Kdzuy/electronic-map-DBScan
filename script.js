@@ -1934,6 +1934,7 @@ function masterFilter() {
         if (dates.length < 2) {
             toggleBtn.style.display = 'none'; // Ẩn nút bấm nếu không đủ dữ liệu
             timelineContainer.classList.remove('visible'); // Đảm bảo thanh trượt cũng ẩn
+            toggleTimelineBtn.classList.remove('active');
             return;
         }
 
