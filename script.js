@@ -15,6 +15,10 @@ let highDensityClusters = [];
 let correlatedClusters = [];
 let isHeatmapMode = false; // Biến mới cho trạng thái heatmap
 let heatLayer = null; // Biến mới để giữ lớp heatmap
+let timelineMinDate = null;
+let timelineMaxDate = null;
+let selectedTimelineStartDate = null;
+let selectedTimelineEndDate = null;
     function clearAnalysisResults() {
         highDensityClusters = [];
         correlatedClusters = [];
@@ -599,7 +603,18 @@ function masterFilter() {
         if (!marker) return false;
         const typeMatch = selectedTypeKeys.has(marker.type);
         const userMatch = isAdmin ? selectedUserOwners.has(marker.Owner) : true;
-        return typeMatch && userMatch;
+        const timelineMatch = (() => {
+            // Nếu thanh trượt không hoạt động, luôn hiển thị
+            if (!selectedTimelineStartDate || !selectedTimelineEndDate) return true;
+            // Nếu ghim không có ngày, luôn hiển thị
+            if (!marker.inclusionDate) return true;
+            
+            const markerDate = new Date(marker.inclusionDate);
+            // So sánh ngày (không tính giờ)
+            return markerDate.setHours(0,0,0,0) <= selectedTimelineEndDate.setHours(0,0,0,0);
+        })();
+        return typeMatch && userMatch && timelineMatch;
+
     });
 
     if (searchTerm) {
@@ -1280,6 +1295,22 @@ function masterFilter() {
         await fetchAccounts();
         checkSession();
         setupFilterEventListeners();
+        // Gắn sự kiện cho nút bật/tắt thanh trượt thời gian
+        const toggleTimelineBtn = document.getElementById('toggle-timeline-btn');
+        const timelineContainer = document.getElementById('timeline-container');
+
+        toggleTimelineBtn.addEventListener('click', () => {
+            const isVisible = timelineContainer.classList.toggle('visible');
+
+            // Nếu người dùng vừa tắt thanh trượt
+            if (!isVisible) {
+                // Reset bộ lọc ngày về trạng thái ban đầu (hiển thị tất cả)
+                selectedTimelineEndDate = timelineMaxDate;
+                document.getElementById('timeline-slider').value = timelineMaxDate.getTime();
+                updateTimelineLabels();
+                masterFilter(); // Áp dụng lại bộ lọc để hiển thị lại tất cả ghim
+            }
+        });
         // 2. Tải dữ liệu ghim
         // await loadMarkers(); // Dòng này được gọi bên trong checkSession() hoặc handleLogin() nên không cần ở đây
             // Quản lý nút Heatmap
@@ -1615,6 +1646,7 @@ function masterFilter() {
         // 3. Đặt lại và cập nhật giao diện
         lockMap(); // Khóa bản đồ và hiện thông báo yêu cầu đăng nhập
         updateAuthUI(); // Cập nhật lại giao diện đăng nhập/thông tin người dùng
+        document.getElementById('timeline-container').classList.remove('visible'); // Ẩn thanh trượt
     }
 
     function updateAuthUI() {
@@ -1745,6 +1777,7 @@ function masterFilter() {
         // })
         enableMapInteraction();
         applyPermissions(); // Áp dụng lại quyền sau khi mở khóa
+        setupTimelineSlider(); // Khởi tạo thanh trượt
     }
 
     async function checkSession() {
@@ -1871,6 +1904,68 @@ function masterFilter() {
         // Trả về danh sách cuối cùng
         return filteredMarkers;
     }
+    function setupTimelineSlider() {
+        const timelineContainer = document.getElementById('timeline-container');
+        const toggleBtn = document.getElementById('toggle-timeline-btn');
+        const slider = document.getElementById('timeline-slider');
+        const startDateLabel = document.getElementById('timeline-date-label-start');
+        const endDateLabel = document.getElementById('timeline-date-label-end');
 
+        // Lấy tất cả các ngày hợp lệ và chuyển thành timestamp
+        const dates = allMarkersData
+            .map(m => m.inclusionDate)
+            .filter(Boolean)
+            .map(d => new Date(d).getTime());
+
+        if (dates.length < 2) {
+            toggleBtn.style.display = 'none'; // Ẩn nút bấm nếu không đủ dữ liệu
+            timelineContainer.classList.remove('visible'); // Đảm bảo thanh trượt cũng ẩn
+            return;
+        }
+
+        // Xác định ngày bắt đầu và kết thúc
+        timelineMinDate = new Date(Math.min(...dates));
+        timelineMaxDate = new Date(Math.max(...dates));
+        selectedTimelineStartDate = timelineMinDate;
+        selectedTimelineEndDate = timelineMaxDate;
+
+        // Thiết lập các giá trị cho thanh trượt
+        slider.min = timelineMinDate.getTime();
+        slider.max = timelineMaxDate.getTime();
+        slider.value = timelineMaxDate.getTime(); // Bắt đầu ở giá trị cuối cùng
+
+        // Cập nhật các nhãn ngày
+        updateTimelineLabels();
+
+        // Gắn sự kiện khi người dùng kéo thanh trượt
+        slider.addEventListener('input', (e) => {
+            // Cập nhật ngày kết thúc dựa trên vị trí thanh trượt
+            selectedTimelineEndDate = new Date(parseInt(e.target.value));
+            updateTimelineLabels();
+            masterFilter(); // Gọi lại hàm lọc chính
+        });
+
+        toggleBtn.style.display = 'flex'; // Hiện nút bấm
+    }
+
+    /**
+     * Cập nhật các nhãn hiển thị ngày bắt đầu và kết thúc.
+     */
+    function updateTimelineLabels() {
+        const startDateLabel = document.getElementById('timeline-date-label-start');
+        const endDateLabel = document.getElementById('timeline-date-label-end');
+        
+        // Hàm phụ để định dạng ngày
+        const formatDate = (date) => {
+            if (!date) return '--/--/----';
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
+        };
+
+        startDateLabel.textContent = formatDate(selectedTimelineStartDate);
+        endDateLabel.textContent = formatDate(selectedTimelineEndDate);
+    }
     initializeApp();
 });

@@ -132,6 +132,7 @@
     </div>
 
     <div id="map"></div>
+    
     <div id="auth-container">
         <button id="auth-toggle-btn"><i class="fa-solid fa-user"></i></button>
         <div id="login-popup">
@@ -142,12 +143,21 @@
         </div>
     </div>
     <div id="location-controls-container">
+        <button id="toggle-timeline-btn" title="Lọc theo thời gian" style="display: none;">
+            <i class="fa-solid fa-calendar-days"></i>
+        </button>
         <button id="find-me-btn-map" title="Tìm vị trí của tôi">
             <i class="fa-solid fa-location-crosshairs"></i>
         </button>
         <button id="pin-my-location-btn-map" class="editor-only" title="Ghim vị trí của tôi">
             <i class="fa-solid fa-thumbtack"></i>
         </button>
+    </div>
+    <div id="timeline-container">
+        <i class="fa-solid fa-clock-rotate-left"></i>
+        <span id="timeline-date-label-start">--/--/----</span>
+        <input type="range" id="timeline-slider" min="0" max="100">
+        <span id="timeline-date-label-end">--/--/----</span>
     </div>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>

@@ -923,3 +923,114 @@ h4{
     padding-right: 5px; /* Thêm chút đệm để thanh cuộn không che nội dung */
     border-top: 1px solid #eee;
 }
+
+#timeline-container {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: clamp(300px, 50%, 700px); /* Chiều rộng linh hoạt */
+    background: white;
+    padding: 5px 10px;
+    border-radius: 10px;
+    border: 1px solid #ddd;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 1000;
+    display: none; /* Mặc định ẩn */
+    align-items: center;
+    gap: 2px;
+}
+
+#timeline-container.visible {
+    display: flex; /* Hiện ra khi bấm nút */
+}
+
+#timeline-date-label-start,
+#timeline-date-label-end {
+    font-weight: bold;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 14px;
+    background: #f1f3f5;
+    padding: 5px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+    color: #333;
+}
+
+/* --- TÙY CHỈNH THANH TRƯỢT (SLIDER) --- */
+input[type=range] {
+    flex-grow: 1;
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+    height: 25px;
+}
+
+/* Track (Thanh chạy) */
+input[type=range]::-webkit-slider-runnable-track {
+    background: #dee2e6;
+    height: 6px;
+    border-radius: 3px;
+}
+input[type=range]::-moz-range-track {
+    background: #dee2e6;
+    height: 6px;
+    border-radius: 3px;
+}
+
+/* Thumb (Nút kéo) */
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    margin-top: -7px; /* Căn giữa nút kéo với thanh chạy */
+    background-color: #862e9c; /* Màu tím đậm */
+    border: 2px solid white;
+    height: 20px;
+    width: 20px;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+input[type=range]::-moz-range-thumb {
+    border: none;
+    background-color: #862e9c;
+    border: 2px solid white;
+    height: 20px;
+    width: 20px;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+@media (max-width: 900px) {
+    /* Thay đổi kích thước và vị trí của container chính */
+    #timeline-container {
+        flex-direction: column; /* Chuyển sang bố cục dọc */
+        width: 70%;             /* Chiếm 90% chiều rộng màn hình */
+        bottom: 15px;           /* Tăng khoảng cách với cạnh dưới */
+        padding: 5px;
+        z-index: 1000;
+    }
+
+    /* Ẩn bớt các phần tử không cần thiết để tiết kiệm không gian */
+    #timeline-container > i {
+        display: none;
+    }
+    #timeline-date-label-start {
+        width: 100%;
+        text-align: center; /* Căn giữa cho đẹp */
+        margin-bottom: 2px; /* Tạo khoảng cách với thanh trượt bên dưới */
+        font-size: 16px;    /* Cho chữ to hơn một chút */
+    }
+    /* Tinh chỉnh lại nhãn ngày tháng còn lại */
+    #timeline-date-label-end {
+        width: 100%;
+        text-align: center; /* Căn giữa cho đẹp */
+        margin-bottom: 2px; /* Tạo khoảng cách với thanh trượt bên dưới */
+        font-size: 16px;    /* Cho chữ to hơn một chút */
+    }
+
+    /* Đảm bảo thanh trượt chiếm toàn bộ chiều rộng container */
+    input[type=range] {
+        width: 100%;
+    }
+}
