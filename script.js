@@ -58,8 +58,6 @@ document.addEventListener('DOMContentLoaded', function () {
         'https://cdn-icons-png.flaticon.com/512/3593/3593990.png',   // Hiện trường vụ án
         'https://cdn-icons-png.flaticon.com/512/3048/3048596.png',   // Tai nạn giao thông
         'https://cdn-icons-png.flaticon.com/512/942/942791.png',     // Cháy nổ
-        'https://cdn-icons-png.flaticon.com/512/3159/3159988.png',   // Gây rối trật tự
-        // 'https://img.icons8.com/ios-filled/50/000000/protest.png',   // Tụ tập, biểu tình
 
         // Đối tượng
         'https://cdn-icons-png.flaticon.com/512/5300/5300195.png',   // Đối tượng nghi vấn
@@ -73,9 +71,38 @@ document.addEventListener('DOMContentLoaded', function () {
         'https://cdn-icons-png.flaticon.com/512/159/159594.png',     // Điểm giám sát (CCTV)
         'https://cdn-icons-png.flaticon.com/512/26/26229.png',       // Mục tiêu cần chú ý
         'https://img.icons8.com/ios-filled/50/000000/link.png',      // Liên kết, kết nối
-        // 'https://img.icons8.com/ios-filled/50/000000/signal.png',    // Tín hiệu, thông tin
         'https://img.icons8.com/ios-filled/50/000000/gun.png',       // Vũ khí, vật chứng
         'https://img.icons8.com/ios-filled/50/000000/handcuffs.png', // Bắt giữ
+        'https://img.icons8.com/ios-filled/50/000000/wallmount-camera.png',
+        // --- Nhân sự & Đơn vị ---
+        'https://img.icons8.com/ios-filled/50/000000/detective.png',      // Trinh sát / Điều tra viên
+        'https://img.icons8.com/ios-filled/50/000000/police-badge.png',    // Huy hiệu Ngành / Xác thực
+        'https://img.icons8.com/ios-filled/50/000000/shield.png',          // Cảnh sát Cơ động / Chống bạo động
+        
+
+        // --- Trang thiết bị & Công cụ ---
+        'https://img.icons8.com/ios-filled/50/000000/fingerprint.png',     // Dấu vết sinh học / Giám định
+
+        // --- Phương tiện ---
+        'https://img.icons8.com/ios-filled/50/000000/helicopter.png',      // Trực thăng / Hỗ trợ trên không
+
+        // --- Địa điểm & Cơ sở vật chất ---
+        'https://img.icons8.com/ios-filled/50/000000/police-station.png',  // Công an Phường/Quận/Huyện
+        'https://img.icons8.com/ios-filled/50/000000/prison.png',          // Nhà tù / Trại giam
+
+        // --- Sự vụ & Loại hình Tội phạm ---
+        'https://img.icons8.com/ios-filled/50/000000/siren.png',           // Tình huống khẩn cấp
+        'https://img.icons8.com/ios-filled/50/000000/robber.png',          // Trộm cắp / Cướp giật
+        'https://img.icons8.com/ios-filled/50/000000/pill.png',            // Tội phạm ma túy
+        'https://img.icons8.com/ios-filled/50/000000/hacking.png',         // Tội phạm mạng
+
+        // --- Hành động & Quy trình Nghiệp vụ ---
+        'https://img.icons8.com/ios-filled/50/000000/search.png',          // Khám xét / Điều tra
+        'https://img.icons8.com/ios-filled/50/000000/evidence.png',        // Vật chứng (chung)
+        'https://img.icons8.com/glyph-neue/64/fire-element.png',
+        'https://img.icons8.com/glyph-neue/64/education.png',
+        'https://img.icons8.com/external-solid-style-bomsymbols-/65/external-fire-sign-navigation-solid-style-solid-style-bomsymbols-.png',
+
     ];
 
     // let allMarkersData = [];
