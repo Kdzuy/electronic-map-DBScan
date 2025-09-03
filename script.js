@@ -380,7 +380,7 @@ window.deleteMarker = async function(markerId) {
         [...selectedUserOwners].filter(owner => validOwners.has(owner))
     );
     updateUI();
-
+    setupTimelineSlider();
     // Gửi yêu cầu xóa ghim lên Google Sheet
     try {
         // THÊM headers VÀO YÊU CẦU FETCH
@@ -1032,6 +1032,7 @@ function masterFilter() {
         if (tempMarker) map.removeLayer(tempMarker);
         renderMarker(newMarkerData);
         updateUI();
+        setupTimelineSlider();
         map.closePopup();
 
         // Gửi yêu cầu thêm ghim mới lên Google Sheet
@@ -1211,7 +1212,7 @@ function masterFilter() {
             renderMarker(allMarkersData[markerIndex]); 
             
             updateUI();
-
+            setupTimelineSlider();
             // 5. Gửi yêu cầu cập nhật lên Google Sheet
             try {
                 // THÊM headers VÀO YÊU CẦU FETCH
@@ -1299,16 +1300,19 @@ function masterFilter() {
         const toggleTimelineBtn = document.getElementById('toggle-timeline-btn');
         const timelineContainer = document.getElementById('timeline-container');
 
-        toggleTimelineBtn.addEventListener('click', () => {
+            toggleTimelineBtn.addEventListener('click', () => {
             const isVisible = timelineContainer.classList.toggle('visible');
 
             // Nếu người dùng vừa tắt thanh trượt
             if (!isVisible) {
-                // Reset bộ lọc ngày về trạng thái ban đầu (hiển thị tất cả)
-                selectedTimelineEndDate = timelineMaxDate;
-                document.getElementById('timeline-slider').value = timelineMaxDate.getTime();
-                updateTimelineLabels();
-                masterFilter(); // Áp dụng lại bộ lọc để hiển thị lại tất cả ghim
+                // SỬA LỖI: Thêm điều kiện kiểm tra timelineMaxDate có tồn tại không
+                if (timelineMaxDate) {
+                    // Reset bộ lọc ngày về trạng thái ban đầu (hiển thị tất cả)
+                    selectedTimelineEndDate = timelineMaxDate;
+                    document.getElementById('timeline-slider').value = timelineMaxDate.getTime();
+                    updateTimelineLabels();
+                    masterFilter(); // Áp dụng lại bộ lọc để hiển thị lại tất cả ghim
+                }
             }
         });
         // 2. Tải dữ liệu ghim
