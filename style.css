@@ -784,7 +784,7 @@ h4{
 
 /* Đảm bảo nội dung popup có padding riêng */
 .leaflet-popup-content {
-    padding: 15px !important;
+    padding: 10px !important;
     /* width: auto !important; */
 }
 
