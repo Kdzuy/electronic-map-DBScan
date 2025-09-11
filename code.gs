@@ -34,8 +34,11 @@ function doGet(e) {
       // LỌC DỮ LIỆU DỰA TRÊN VAI TRÒ
       // Nếu là Editor, chỉ giữ lại các ghim do chính họ tạo
       if (role === 'Editor') {
-          markers = markers.filter(marker => marker.Owner === username);
+          markers = markers.filter(marker => marker.Owner === username || marker.Owner === "viewer");
       } 
+      if (role === 'Viewer') {
+          markers = markers.filter(marker => marker.Owner === "viewer");
+      }
       // Nếu là Admin, không cần lọc, sẽ thấy tất cả
       // Viewer sẽ bị chặn ngay từ đầu, không nhận được dữ liệu
 

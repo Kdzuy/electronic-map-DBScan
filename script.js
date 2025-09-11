@@ -4,7 +4,7 @@ let selectedUserOwners = new Set();
 let markerTypes = {};
 let markerLayerGroup = L.markerClusterGroup();
 let initialView = JSON.parse(localStorage.getItem('mapInitialView')) || { lat: 10.4633, lng: 105.6325, zoom: 14 };
-const GOOGLE_SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbyvJxca-fIF29plCARaW303KdUEtlsCl4Am6CNPrqVMZLJ8XTCOb87HiNk8vxUEAf-2aA/exec';
+const GOOGLE_SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbyT2tUSVWT_-7mnFpxEWS24Gm1yuDLcLMTVA9BGyqcjHQUAmDYQ_KEVy0okC9IOd4eF5Q/exec';
 let allAccounts = []; // Biến mới để lưu danh sách tài khoản
 let currentUser = null; // Biến mới để lưu thông tin người dùng đã đăng nhập
 let isPopupOpen = false;
@@ -358,7 +358,7 @@ window.deleteMarker = async function(markerId) {
     const markerToDelete = allMarkersData.find(m => m.id === markerId);
     if (!markerToDelete) return;
     
-    if (!currentUser || (currentUser.Role === 'Viewer') || (currentUser.Role === 'Editor' && markerToDelete.Owner !== currentUser.Username)) {
+    if (!currentUser || (currentUser.Role === 'Viewer' && markerToDelete.Owner !== currentUser.Username) || (currentUser.Role === 'Editor' && markerToDelete.Owner !== currentUser.Username)) {
         alert("Bạn không có quyền xóa ghim này.");
         return;
     }
@@ -936,7 +936,7 @@ function masterFilter() {
     // TÁCH HÀM MỞ POPUP ĐỂ TÁI SỬ DỤNG
     function openAddMarkerPopup(lat, lng) {
         // THÊM ĐOẠN KIỂM TRA QUYỀN NÀY
-        if (!currentUser || (currentUser.Role !== 'Admin' && currentUser.Role !== 'Editor')) {
+        if (!currentUser || (currentUser.Role !== 'Admin' && currentUser.Role !== 'Editor' && currentUser.Role !== 'Viewer')) {
             alert("Bạn không có quyền thêm ghim.");
             return;
         }
@@ -1015,7 +1015,7 @@ function masterFilter() {
     }
     // --- CÁC HÀM HÀNH ĐỘNG (Gán vào window để HTML gọi được) ---
     window.addMarker = async function(lat, lng) {
-        if (!currentUser || (currentUser.Role !== 'Admin' && currentUser.Role !== 'Editor')) {
+        if (!currentUser || (currentUser.Role !== 'Admin' && currentUser.Role !== 'Editor' && currentUser.Role !== 'Viewer')) {
             alert("Bạn không có quyền thêm ghim.");
             return;
         }
@@ -1105,7 +1105,7 @@ function masterFilter() {
         }
 
         // --- KIỂM TRA ĐẢM BẢO QUYỀN SỬA ---
-        if (!currentUser || (currentUser.Role === 'Viewer') || (currentUser.Role === 'Editor' && markerData.Owner !== currentUser.Username)) {
+        if (!currentUser || (currentUser.Role === 'Viewer' && markerData.Owner !== currentUser.Username) || (currentUser.Role === 'Editor' && markerData.Owner !== currentUser.Username)) {
             alert("Bạn không có quyền sửa ghim này.");
             return;
         }
@@ -1174,7 +1174,7 @@ function masterFilter() {
         if (markerIndex === -1) return;
         const markerToEdit = allMarkersData[markerIndex];
 
-        if (!currentUser || (currentUser.Role === 'Viewer') || (currentUser.Role === 'Editor' && markerToEdit.Owner !== currentUser.Username)) {
+        if (!currentUser || (currentUser.Role === 'Viewer' && markerToEdit.Owner !== currentUser.Username) || (currentUser.Role === 'Editor' && markerToEdit.Owner !== currentUser.Username)) {
             alert("Bạn không có quyền sửa ghim này.");
             return;
         }
@@ -1446,7 +1446,7 @@ function masterFilter() {
         });
 
         document.getElementById('pin-my-location-btn-map').addEventListener('click', () => {
-            if (!currentUser || (currentUser.Role !== 'Admin' && currentUser.Role !== 'Editor')) {
+            if (!currentUser || (currentUser.Role !== 'Admin' && currentUser.Role !== 'Editor' && currentUser.Role !== 'Viewer')) {
                 alert("Bạn không có quyền thêm ghim.");
                 return;
             }
@@ -1559,7 +1559,7 @@ function masterFilter() {
                     const markerToEdit = allMarkersData[markerIndex];
 
                     // Kiểm tra quyền sở hữu trước khi tự động lưu
-                    if (!currentUser || (currentUser.Role === 'Viewer') || (currentUser.Role === 'Editor' && markerToEdit.Owner !== currentUser.Username)) {
+                    if (!currentUser || (currentUser.Role === 'Viewer'  && markerToEdit.Owner !== currentUser.Username) || (currentUser.Role === 'Editor' && markerToEdit.Owner !== currentUser.Username)) {
                         console.log("Tự động lưu bị hủy do không có quyền.");
                         // Tải lại marker gốc để hủy thay đổi trên form
                         setTimeout(() => {
@@ -1701,22 +1701,22 @@ function masterFilter() {
             if (currentUser.Role === 'Admin') {
                 adminOnlyElements.forEach(el => el.style.display = 'block');
                 editorOnlyElements.forEach(el => el.style.display = 'block');
-            } else if (currentUser.Role === 'Editor') {
+            } else if (currentUser.Role === 'Editor' || currentUser.Role === 'Viewer') {
                 editorOnlyElements.forEach(el => el.style.display = 'block');
             }
         }
         
         // Vô hiệu hóa/Kích hoạt các chức năng không có class
-        document.getElementById('save-btn').style.display = (currentUser && (currentUser.Role === 'Admin' || currentUser.Role === 'Editor')) ? 'block' : 'none';
-        
+        document.getElementById('save-btn').style.display = (currentUser && (currentUser.Role === 'Admin' || currentUser.Role === 'Editor' || currentUser.Role === 'Viewer')) ? 'block' : 'none';
+
         // Vô hiệu hóa/Kích hoạt thanh công cụ vẽ
         const drawToolbar = document.querySelector('.leaflet-draw');
         if (drawToolbar) {
-            drawToolbar.style.display = (currentUser && (currentUser.Role === 'Admin' || currentUser.Role === 'Editor')) ? 'block' : 'none';
+            drawToolbar.style.display = (currentUser && (currentUser.Role === 'Admin' || currentUser.Role === 'Editor' || currentUser.Role === 'Viewer')) ? 'block' : 'none';
         }
         const editToolbar = document.querySelector('.leaflet-draw-edit');
         if (editToolbar) {
-            editToolbar.style.display = (currentUser && (currentUser.Role === 'Admin' || currentUser.Role === 'Editor')) ? 'block' : 'none';
+            editToolbar.style.display = (currentUser && (currentUser.Role === 'Admin' || currentUser.Role === 'Editor' || currentUser.Role === 'Viewer')) ? 'block' : 'none';
         }
     }
 
@@ -1934,7 +1934,7 @@ function masterFilter() {
         if (dates.length < 2) {
             toggleBtn.style.display = 'none'; // Ẩn nút bấm nếu không đủ dữ liệu
             timelineContainer.classList.remove('visible'); // Đảm bảo thanh trượt cũng ẩn
-            toggleTimelineBtn.classList.remove('active');
+            toggleBtn.classList.remove('active');
             return;
         }
 
