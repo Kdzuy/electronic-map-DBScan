@@ -2,7 +2,7 @@ let map;
 let selectedTypeKeys = new Set();
 let selectedUserOwners = new Set();
 let markerTypes = {};
-let markerLayerGroup = L.markerClusterGroup();
+let markerLayerGroup = L.markerClusterGroup({ maxClusterRadius: 20 });
 let initialView = JSON.parse(localStorage.getItem('mapInitialView')) || { lat: 10.4633, lng: 105.6325, zoom: 14 };
 const GOOGLE_SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbyT2tUSVWT_-7mnFpxEWS24Gm1yuDLcLMTVA9BGyqcjHQUAmDYQ_KEVy0okC9IOd4eF5Q/exec';
 let allAccounts = []; // Biến mới để lưu danh sách tài khoản
@@ -19,6 +19,7 @@ let timelineMinDate = null;
 let timelineMaxDate = null;
 let selectedTimelineStartDate = null;
 let selectedTimelineEndDate = null;
+let epsilonContainer, epsilonSlider, epsilonValueLabel, minPointsInput;
     function clearAnalysisResults() {
         highDensityClusters = [];
         correlatedClusters = [];
@@ -31,13 +32,42 @@ let selectedTimelineEndDate = null;
 
 // Bắt đầu toàn bộ mã khi cây DOM đã sẵn sàng
 document.addEventListener('DOMContentLoaded', function () {
-    // Dán URL Web App bạn đã triển khai ở Google Apps Script vào đây
+    epsilonContainer = document.getElementById('epsilon-container');
+    epsilonSlider = document.getElementById('epsilon-slider');
+    epsilonValueLabel = document.getElementById('epsilon-value-label');
+    minPointsInput = document.getElementById('dbscan-min-points');
 
+    // Tải giá trị MinPoints đã lưu hoặc dùng mặc định
+    minPointsInput.value = localStorage.getItem('dbscanMinPoints') || 3;
+
+    // Xử lý sự kiện thay đổi MinPoints
+    minPointsInput.addEventListener('change', () => {
+        localStorage.setItem('dbscanMinPoints', minPointsInput.value);
+        if (isAnalysisMode) masterFilter();
+    });
+
+    // Hàm cập nhật nhãn cho thanh trượt
+    function updateEpsilonLabel(valueMeters) {
+        epsilonValueLabel.textContent = (valueMeters < 1000)
+            ? `${valueMeters}m`
+            : `${(valueMeters / 1000).toFixed(1)}km`;
+    }
+    updateEpsilonLabel(epsilonSlider.value);
+
+    // Xử lý sự kiện kéo thanh trượt
+    epsilonSlider.addEventListener('input', e => updateEpsilonLabel(e.target.value));
+    epsilonSlider.addEventListener('change', () => {
+        if (isAnalysisMode) masterFilter();
+    });
     // --- CẤU HÌNH BAN ĐẦU ---
     const MarkerIcon = L.Icon.extend({
         options: {
-            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-            iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+            iconSize: [20, 33],       // Gốc là [25, 41]
+            iconAnchor: [10, 33],      // Gốc là [12, 41]
+            popupAnchor: [1, -28],     // Gốc là [1, -34]
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+            shadowSize: [33, 33],      // Gốc là [41, 41]
+            shadowAnchor: [10, 33]     // Gốc là [12, 41]
         }
     });
     const availableIcons = [
@@ -159,7 +189,7 @@ document.addEventListener('DOMContentLoaded', function () {
         analysisBtn.addEventListener('click', () => {
             isAnalysisMode = !isAnalysisMode;
             const resultsContainer = document.getElementById('analysis-results-container');
-            
+            epsilonContainer.classList.toggle('active', isAnalysisMode);
             if (isAnalysisMode) {
                 analysisBtn.textContent = 'Tắt Phân Tích';
                 analysisBtn.style.backgroundColor = '#dc3545';
@@ -657,7 +687,10 @@ function masterFilter() {
         }
     } else if (isAnalysisMode) {
         // Chạy phân tích DBSCAN nếu chế độ này đang bật
-        runDBScanAnalysis(filteredData);
+        const epsilonMeters = parseInt(epsilonSlider.value);
+        const epsilonKm = epsilonMeters / 1000;
+        const minPoints = parseInt(minPointsInput.value);
+        runDBScanAnalysis(filteredData, epsilonKm, minPoints);
     } else {
         // Mặc định: vẽ các ghim riêng lẻ
         filteredData.forEach(renderMarker);
@@ -1329,6 +1362,7 @@ function masterFilter() {
                     // Tắt chế độ phân tích nếu đang bật
                     if (isAnalysisMode) {
                         isAnalysisMode = false;
+                        epsilonContainer.classList.toggle('active', isAnalysisMode);
                         const analysisBtn = document.getElementById('toggle-analysis-btn');
                         const resultsContainer = document.getElementById('analysis-results-container');
                         analysisBtn.textContent = 'Bật Phân Tích';

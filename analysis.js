@@ -2,9 +2,9 @@
 
 // --- CẤU HÌNH PHÂN TÍCH ---
 // Bán kính để tìm các điểm lân cận (tính bằng km)
-const DBSCAN_EPSILON = 1;
-// Số điểm tối thiểu để tạo thành một cụm
-const DBSCAN_MIN_POINTS = 3;
+// const DBSCAN_EPSILON = 1;
+// // Số điểm tối thiểu để tạo thành một cụm
+// const DBSCAN_MIN_POINTS = 3;
 // Ngưỡng để phân biệt mật độ cao và thấp (số điểm trên mỗi km vuông)
 // const DENSITY_THRESHOLD = 15;
 
@@ -12,7 +12,7 @@ const DBSCAN_MIN_POINTS = 3;
  * Sử dụng DBSCAN để phân tích và trực quan hóa các cụm ghim.
  * Phân loại cụm dựa trên mật độ và loại ghim (mật độ cao, tương quan, đơn lẻ).
  */
-function runDBScanAnalysis(visibleMarkers) {
+function runDBScanAnalysis(visibleMarkers, epsilonKm, minPoints) {
     // --- NÂNG CẤP AN TOÀN ---
     if (!visibleMarkers) {
         // console.log("runDBScanAnalysis không nhận được dữ liệu, đang tự lấy từ map layer.");
@@ -34,7 +34,7 @@ function runDBScanAnalysis(visibleMarkers) {
     
     clearAnalysisResults(); // Xóa kết quả phân tích cũ trước khi chạy
 
-    if (visibleMarkers.length < DBSCAN_MIN_POINTS) {
+    if (visibleMarkers.length < minPoints) {
         visibleMarkers.forEach(marker => drawSolitaryMarker(marker));
         return;
     }
@@ -53,7 +53,7 @@ function runDBScanAnalysis(visibleMarkers) {
     
     // Chạy phân cụm lần 1: Trên tất cả các điểm để tìm các cụm hỗn hợp (tương quan)
     const coords = visibleMarkers.map(d => [d.lat, d.lng]);
-    let clusters = dbscan.run(coords, DBSCAN_EPSILON, DBSCAN_MIN_POINTS, haversineDistance);
+    let clusters = dbscan.run(coords, epsilonKm, minPoints, haversineDistance);
 
     // Chuẩn bị cho lần 2: Phân nhóm các ghim theo từng loại riêng biệt
     const markersByType = visibleMarkers.reduce((acc, marker, index) => {
@@ -65,10 +65,10 @@ function runDBScanAnalysis(visibleMarkers) {
         // Chạy phân cụm lần 2: Lặp qua từng loại ghim và chạy DBSCAN riêng
         for (const typeKey in markersByType) {
             const typeGroup = markersByType[typeKey];
-            if (typeGroup.length < DBSCAN_MIN_POINTS) continue;
+            if (typeGroup.length < minPoints) continue;
 
             const typeCoords = typeGroup.map(item => [item.marker.lat, item.marker.lng]);
-            const typeClusters = dbscan.run(typeCoords, DBSCAN_EPSILON, DBSCAN_MIN_POINTS, haversineDistance);
+            const typeClusters = dbscan.run(typeCoords, epsilonKm, minPoints, haversineDistance);
 
             const mappedTypeClusters = typeClusters.map(localCluster =>
                 localCluster.map(localIndex => typeGroup[localIndex].originalIndex)

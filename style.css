@@ -929,7 +929,7 @@ h4{
     bottom: 30px;
     left: 50%;
     transform: translateX(-50%);
-    width: clamp(300px, 50%, 700px); /* Chiều rộng linh hoạt */
+    width: 70%; /* Chiều rộng linh hoạt */
     background: white;
     padding: 5px 10px;
     border-radius: 10px;
@@ -1008,7 +1008,7 @@ input[type=range]::-moz-range-thumb {
         width: 70%;             /* Chiếm 90% chiều rộng màn hình */
         bottom: 15px;           /* Tăng khoảng cách với cạnh dưới */
         padding: 5px;
-        z-index: 1000;
+        z-index: 998;
     }
 
     /* Ẩn bớt các phần tử không cần thiết để tiết kiệm không gian */
@@ -1060,4 +1060,69 @@ input[type=range]::-moz-range-thumb {
 }
 #toggle-heatmap-btn {
     background-color: #dc3545;
+}
+
+#epsilon-container {
+    position: absolute;
+    top: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 5px 10px;
+    border-radius: 5px;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.65);
+    z-index: 998;
+    display: none; /* Ẩn mặc định */
+    align-items: center;
+    gap: 2px;
+    color: #333;
+    width: 70%;
+    /* max-width: 600px; */
+}
+
+#epsilon-container.active {
+    display: flex;
+}
+
+#epsilon-container input[type=range] {
+    flex-grow: 1;
+}
+
+#epsilon-value-label {
+    font-weight: bold;
+    min-width: 55px;
+    text-align: center;
+}
+
+.analysis-control-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 5px 0;
+    padding: 3px 5px;
+    border-bottom: 1px solid #e0e0e0;
+    transition: background-color 0.2s ease;
+}
+
+.analysis-control-item:hover {
+    background-color: #f0f0f0; /* Thêm hiệu ứng khi di chuột qua */
+}
+
+/* Kiểu dáng cho chính ô nhập số */
+#dbscan-min-points {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #fff;
+    text-align: center; /* Căn giữa số bên trong */
+    font-size: 14px;
+    font-weight: bold;
+    color: #333;
+    outline: none; /* Bỏ viền xanh khi focus */
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Hiệu ứng khi người dùng click vào ô nhập */
+#dbscan-min-points:focus {
+    border-color: #007bff; /* Đổi màu viền sang xanh dương */
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25); /* Thêm hiệu ứng bóng mờ */
 }
