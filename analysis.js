@@ -1,13 +1,5 @@
 // analysis.js
 
-// --- CẤU HÌNH PHÂN TÍCH ---
-// Bán kính để tìm các điểm lân cận (tính bằng km)
-// const DBSCAN_EPSILON = 1;
-// // Số điểm tối thiểu để tạo thành một cụm
-// const DBSCAN_MIN_POINTS = 3;
-// Ngưỡng để phân biệt mật độ cao và thấp (số điểm trên mỗi km vuông)
-// const DENSITY_THRESHOLD = 15;
-
 /**
  * Sử dụng DBSCAN để phân tích và trực quan hóa các cụm ghim.
  * Phân loại cụm dựa trên mật độ và loại ghim (mật độ cao, tương quan, đơn lẻ).
