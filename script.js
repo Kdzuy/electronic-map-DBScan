@@ -1388,6 +1388,9 @@ function masterFilter() {
             });
         }
         // 3. Gắn sự kiện cho các nút Đăng nhập / Đăng xuất
+        function togglePopup() {
+            document.getElementById('login-popup').classList.toggle('show');
+        }
         document.getElementById('auth-toggle-btn').addEventListener('click', () => {
             document.getElementById('login-popup').classList.toggle('show');
         });
@@ -1671,7 +1674,10 @@ function masterFilter() {
             // loginMessage.style.color = 'red';
             return;
         }
+        
         updateAuthUI();
+        document.getElementById('login-btn').disabled = true;
+        document.getElementById('auth-toggle-btn').disabled = true;
         loginMessage.textContent = 'Đang xác thực...';
         // Gửi thông tin đăng nhập đến Google Script để xác thực
         fetch(GOOGLE_SHEET_API_URL, {
@@ -1700,13 +1706,18 @@ function masterFilter() {
                 
                 unlockMap(); // Mở khóa bản đồ và hiện sidebar
                 updateUI();  // Cập nhật nội dung sidebar
+                
                 updateAuthUI();
-
+                document.getElementById('login-btn').disabled = false;
+                document.getElementById('auth-toggle-btn').disabled = false;
             } else {
                 loginMessage.textContent = data.message || 'Lỗi không xác định.';
                 currentUser = null;
                 localStorage.removeItem('currentUser');
+                
                 updateAuthUI();
+                document.getElementById('login-btn').disabled = false;
+                document.getElementById('auth-toggle-btn').disabled = false;
             }
         })
         .catch(error => {
@@ -1715,8 +1726,9 @@ function masterFilter() {
             currentUser = null;
             localStorage.removeItem('currentUser');
             updateAuthUI();
+            document.getElementById('login-btn').disabled = false;
+            document.getElementById('auth-toggle-btn').disabled = false;
         });
-
     }
 
     function handleLogout() {
