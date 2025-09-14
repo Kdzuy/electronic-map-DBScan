@@ -64,6 +64,31 @@ function doPost(e) {
   const action = requestData.action;
   
   try {
+    if (action === 'validateCredentials') {
+      const username = requestData.username;
+      const password = requestData.password;
+
+      const data = sheetAccounts.getDataRange().getValues();
+      const headers = data.shift();
+      const usernameIndex = headers.indexOf('Username');
+      const passwordIndex = headers.indexOf('Password');
+
+      for (let i = 0; i < data.length; i++) {
+        if (data[i][usernameIndex] === username && data[i][passwordIndex] === password) {
+          // Tìm thấy tài khoản, trả về thông tin người dùng (KHÔNG BAO GỒM MẬT KHẨU)
+          let userAccount = {};
+          headers.forEach((header, index) => {
+            if (header !== 'Password') { // Lọc bỏ mật khẩu
+              userAccount[header] = data[i][index];
+            }
+          });
+          return ContentService.createTextOutput(JSON.stringify({ success: true, user: userAccount })).setMimeType(ContentService.MimeType.JSON);
+        }
+      }
+
+      // Nếu không tìm thấy
+      return ContentService.createTextOutput(JSON.stringify({ success: false, message: 'Tên đăng nhập hoặc mật khẩu không đúng.' })).setMimeType(ContentService.MimeType.JSON);
+    }
     // --- XỬ LÝ LƯU TỪNG MARKER ---
     if (action == "addMarker") {
       const marker = requestData.marker;

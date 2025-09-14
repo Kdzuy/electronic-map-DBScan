@@ -4,7 +4,7 @@ let selectedUserOwners = new Set();
 let markerTypes = {};
 let markerLayerGroup = L.markerClusterGroup({ maxClusterRadius: 40 });
 let initialView = JSON.parse(localStorage.getItem('mapInitialView')) || { lat: 10.4633, lng: 105.6325, zoom: 14 };
-const GOOGLE_SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbyT2tUSVWT_-7mnFpxEWS24Gm1yuDLcLMTVA9BGyqcjHQUAmDYQ_KEVy0okC9IOd4eF5Q/exec';
+const GOOGLE_SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbwgZErrhyIrKPf4FHx1SkXU8LVLCQ9VycYdBTCAzwQB4G3ixkEIj0Yl_fO1ddGk9keM/exec';
 let allAccounts = []; // Biến mới để lưu danh sách tài khoản
 let currentUser = null; // Biến mới để lưu thông tin người dùng đã đăng nhập
 let isPopupOpen = false;
@@ -19,7 +19,7 @@ let timelineMinDate = null;
 let timelineMaxDate = null;
 let selectedTimelineStartDate = null;
 let selectedTimelineEndDate = null;
-let epsilonContainer, epsilonSlider, epsilonValueLabel, minPointsInput;
+let epsilonContainer, epsilonSlider, epsilonValueLabel, minPointsInput, loginUsernameInput, loginPasswordInput;
     function clearAnalysisResults() {
         highDensityClusters = [];
         correlatedClusters = [];
@@ -32,6 +32,8 @@ let epsilonContainer, epsilonSlider, epsilonValueLabel, minPointsInput;
 
 // Bắt đầu toàn bộ mã khi cây DOM đã sẵn sàng
 document.addEventListener('DOMContentLoaded', function () {
+    loginUsernameInput = document.getElementById('username-input');
+    loginPasswordInput = document.getElementById('password-input');
     epsilonContainer = document.getElementById('epsilon-container');
     epsilonSlider = document.getElementById('epsilon-slider');
     epsilonValueLabel = document.getElementById('epsilon-value-label');
@@ -1334,7 +1336,7 @@ function masterFilter() {
     // --- KHỞI CHẠY ỨNG DỤNG ---
     async function initializeApp() {
         // 1. Tải danh sách tài khoản và kiểm tra phiên đăng nhập đã lưu
-        await fetchAccounts();
+        // await fetchAccounts();
         checkSession();
         setupFilterEventListeners();
         // Gắn sự kiện cho nút bật/tắt thanh trượt thời gian
@@ -1389,7 +1391,9 @@ function masterFilter() {
         document.getElementById('auth-toggle-btn').addEventListener('click', () => {
             document.getElementById('login-popup').classList.toggle('show');
         });
-        document.getElementById('login-btn').addEventListener('click', handleLogin);
+        document.getElementById('login-btn').addEventListener('click', () => {
+            handleLogin(loginUsernameInput.value.trim(), loginPasswordInput.value.trim());
+        });
         document.getElementById('logout-btn').addEventListener('click', handleLogout);
         
         // 4. BỔ SUNG LẠI: Gắn sự kiện cho nút Mở/Đóng Bảng điều khiển (Sidebar)
@@ -1645,38 +1649,73 @@ function masterFilter() {
         }
     });
     // --- HÀM XỬ LÝ ĐĂNG NHẬP, ĐĂNG XUẤT, PHÂN QUYỀN ---
-    async function fetchAccounts() {
-        try {
-            const response = await fetch(`${GOOGLE_SHEET_API_URL}?action=getAccounts&t=${new Date().getTime()}`);
-            if (!response.ok) throw new Error('Không thể tải danh sách tài khoản.');
-            allAccounts = await response.json();
-        } catch (error) {
-            console.error(error.message);
-            // alert(error.message);
-        }
-    }
+    // async function fetchAccounts() {
+    //     try {
+    //         const response = await fetch(`${GOOGLE_SHEET_API_URL}?action=getAccounts&t=${new Date().getTime()}`);
+    //         if (!response.ok) throw new Error('Không thể tải danh sách tài khoản.');
+    //         allAccounts = await response.json();
+    //     } catch (error) {
+    //         console.error(error.message);
+    //         // alert(error.message);
+    //     }
+    // }
 
     // THAY THẾ TOÀN BỘ HÀM NÀY
-    async function handleLogin() {
-        const username = document.getElementById('username-input').value;
-        const password = document.getElementById('password-input').value;
-        const account = allAccounts.find(acc => acc.Username === username && acc.Password === password);
+    function handleLogin(username, password) {
+        // password = 'Admin@1234'
+        // console.log("Đang đăng nhập với:", username, password);
+        const loginMessage = document.getElementById('map-blocker-message');
 
-        if (account) {
-            currentUser = account;
-            localStorage.setItem('currentUser', JSON.stringify(currentUser));
-            
-            document.getElementById('login-popup').classList.remove('show');
-            document.getElementById('map-blocker-message').textContent = 'Đang tải dữ liệu...';
-
-            await loadMarkers(); // Tải dữ liệu ghim
-            
-            unlockMap(); // Mở khóa bản đồ và hiện sidebar
-            updateUI();  // Cập nhật nội dung sidebar
-            updateAuthUI(); // Cập nhật thông tin người dùng
-        } else {
-            alert("Tên đăng nhập hoặc mật khẩu không đúng.");
+        if (!username || !password) {
+            loginMessage.textContent = 'Vui lòng nhập đầy đủ thông tin.';
+            // loginMessage.style.color = 'red';
+            return;
         }
+
+        // Gửi thông tin đăng nhập đến Google Script để xác thực
+        fetch(GOOGLE_SHEET_API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                action: 'validateCredentials',
+                username: username,
+                password: password
+            }),
+        })
+        .then(response => response.json())
+        .then(async data => {
+            if (data.success) {
+                loginMessage.textContent = 'Đăng nhập thành công!';
+                // loginMessage.style.color = 'green';
+                
+                currentUser = data.user;
+                currentUser.Password = password;
+                // Lưu thông tin người dùng (không có mật khẩu) vào localStorage
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                console.log("Người dùng hiện tại:", localStorage);
+                document.getElementById('login-popup').classList.remove('show');
+                document.getElementById('map-blocker-message').textContent = 'Đang tải dữ liệu...';
+
+                await loadMarkers(); // Tải dữ liệu ghim
+                
+                unlockMap(); // Mở khóa bản đồ và hiện sidebar
+                updateUI();  // Cập nhật nội dung sidebar
+                updateAuthUI();
+
+            } else {
+                loginMessage.textContent = data.message || 'Lỗi không xác định.';
+                currentUser = null;
+                localStorage.removeItem('currentUser');
+                updateAuthUI();
+            }
+        })
+        .catch(error => {
+            console.error('Lỗi đăng nhập:', error);
+            loginMessage.textContent = 'Đã xảy ra lỗi kết nối. Vui lòng thử lại.';
+            currentUser = null;
+            localStorage.removeItem('currentUser');
+            updateAuthUI();
+        });
+
     }
 
     function handleLogout() {
@@ -1830,12 +1869,13 @@ function masterFilter() {
         const storedUser = localStorage.getItem('currentUser');
         if (storedUser) {
             currentUser = JSON.parse(storedUser);
+            console.log("Phiên đăng nhập tìm thấy:", currentUser);
+            handleLogin(currentUser.Username, currentUser.Password);
+            // document.getElementById('map-blocker-message').textContent = 'Đang tải dữ liệu...';
+            // await loadMarkers(); // Tải dữ liệu cho người dùng cũ
             
-            document.getElementById('map-blocker-message').textContent = 'Đang tải dữ liệu...';
-            await loadMarkers(); // Tải dữ liệu cho người dùng cũ
-            
-            unlockMap(); // Mở khóa
-            updateUI();
+            // unlockMap(); // Mở khóa
+            // updateUI();
         }
         updateAuthUI(); // Luôn cập nhật giao diện đăng nhập
     }
