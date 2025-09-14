@@ -1711,21 +1711,16 @@ function masterFilter() {
                 document.getElementById('login-btn').disabled = false;
                 document.getElementById('auth-toggle-btn').disabled = false;
             } else {
+                handleLogout();
                 loginMessage.textContent = data.message || 'Lỗi không xác định.';
-                currentUser = null;
-                localStorage.removeItem('currentUser');
-                
-                updateAuthUI();
                 document.getElementById('login-btn').disabled = false;
                 document.getElementById('auth-toggle-btn').disabled = false;
             }
         })
         .catch(error => {
             console.error('Lỗi đăng nhập:', error);
+            handleLogout();
             loginMessage.textContent = 'Đã xảy ra lỗi kết nối. Vui lòng thử lại.';
-            currentUser = null;
-            localStorage.removeItem('currentUser');
-            updateAuthUI();
             document.getElementById('login-btn').disabled = false;
             document.getElementById('auth-toggle-btn').disabled = false;
         });
