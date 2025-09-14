@@ -1671,7 +1671,8 @@ function masterFilter() {
             // loginMessage.style.color = 'red';
             return;
         }
-
+        updateAuthUI();
+        loginMessage.textContent = 'Đang xác thực...';
         // Gửi thông tin đăng nhập đến Google Script để xác thực
         fetch(GOOGLE_SHEET_API_URL, {
             method: 'POST',
@@ -1691,7 +1692,7 @@ function masterFilter() {
                 currentUser.Password = password;
                 // Lưu thông tin người dùng (không có mật khẩu) vào localStorage
                 localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                console.log("Người dùng hiện tại:", localStorage);
+                // console.log("Người dùng hiện tại:", localStorage);
                 document.getElementById('login-popup').classList.remove('show');
                 document.getElementById('map-blocker-message').textContent = 'Đang tải dữ liệu...';
 
@@ -1868,16 +1869,17 @@ function masterFilter() {
     async function checkSession() {
         const storedUser = localStorage.getItem('currentUser');
         if (storedUser) {
-            currentUser = JSON.parse(storedUser);
-            console.log("Phiên đăng nhập tìm thấy:", currentUser);
-            handleLogin(currentUser.Username, currentUser.Password);
+            let checkSessionUser = JSON.parse(storedUser);
+            // console.log("Phiên đăng nhập tìm thấy:", currentUser);
+            handleLogin(checkSessionUser.Username, checkSessionUser.Password);
             // document.getElementById('map-blocker-message').textContent = 'Đang tải dữ liệu...';
             // await loadMarkers(); // Tải dữ liệu cho người dùng cũ
             
             // unlockMap(); // Mở khóa
             // updateUI();
+        } else {
+            updateAuthUI(); // Luôn cập nhật giao diện đăng nhập
         }
-        updateAuthUI(); // Luôn cập nhật giao diện đăng nhập
     }
     function exportVisibleMarkersToExcel() {
         // THAY ĐỔI QUAN TRỌNG: Lấy dữ liệu từ hàm lọc thay vì từ màn hình bản đồ
