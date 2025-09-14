@@ -136,6 +136,13 @@ document.addEventListener('DOMContentLoaded', function () {
         '/icons/education.png',
         '/icons/external-fire-sign-navigation-solid-style-solid-style-bomsymbols-.png',
         '/icons/pagoda.png',
+        '/icons/building.png',
+        '/icons/thumbtack.png',
+        '/icons/car-alt.png',
+        '/icons/school.png',
+        '/icons/glass-cheers.png',
+        '/icons/chess-knight-alt.png',
+        '/icons/cars-crash.png',
     ];
 
     // let allMarkersData = [];
