@@ -143,6 +143,7 @@ document.addEventListener('DOMContentLoaded', function () {
         '/icons/glass-cheers.png',
         '/icons/chess-knight-alt.png',
         '/icons/cars-crash.png',
+        '/icons/person.png',
     ];
 
     // let allMarkersData = [];
