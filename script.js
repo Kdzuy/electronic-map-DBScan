@@ -2,7 +2,7 @@ let map;
 let selectedTypeKeys = new Set();
 let selectedUserOwners = new Set();
 let markerTypes = {};
-let markerLayerGroup = L.markerClusterGroup({ maxClusterRadius: 20 });
+let markerLayerGroup = L.markerClusterGroup({ maxClusterRadius: 40 });
 let initialView = JSON.parse(localStorage.getItem('mapInitialView')) || { lat: 10.4633, lng: 105.6325, zoom: 14 };
 const GOOGLE_SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbyT2tUSVWT_-7mnFpxEWS24Gm1yuDLcLMTVA9BGyqcjHQUAmDYQ_KEVy0okC9IOd4eF5Q/exec';
 let allAccounts = []; // Biến mới để lưu danh sách tài khoản
