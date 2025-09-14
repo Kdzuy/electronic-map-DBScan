@@ -1879,11 +1879,6 @@ function masterFilter() {
             let checkSessionUser = JSON.parse(storedUser);
             // console.log("Phiên đăng nhập tìm thấy:", currentUser);
             handleLogin(checkSessionUser.Username, checkSessionUser.Password);
-            // document.getElementById('map-blocker-message').textContent = 'Đang tải dữ liệu...';
-            // await loadMarkers(); // Tải dữ liệu cho người dùng cũ
-            
-            // unlockMap(); // Mở khóa
-            // updateUI();
         } else {
             updateAuthUI(); // Luôn cập nhật giao diện đăng nhập
         }
