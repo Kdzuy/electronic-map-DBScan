@@ -1841,6 +1841,15 @@ function masterFilter() {
         document.getElementById('sidebar').classList.remove('visible', 'open');
         document.getElementById('toggle-btn').classList.remove('visible', 'shifted');
         document.getElementById('export-excel-btn').removeEventListener('click', exportVisibleMarkersToExcel);
+        //=======================
+        isAnalysisMode = false;
+        document.getElementById('toggle-analysis-btn').textContent = 'Bật Phân Tích';
+        document.getElementById('toggle-analysis-btn').style.backgroundColor = '#28a745';
+        document.getElementById('analysis-results-container').style.display = 'none';
+        clearAnalysisResults();
+        document.getElementById('epsilon-container').classList.remove('active');
+        //=======================
+        isHeatmapMode = false;
         // document.getElementById('test-filter-btn').removeEventListener('click', getFilteredData);
         // ---- BỔ SUNG SỬA LỖI ----
         // Tìm đến icon và đặt lại về trạng thái ban đầu (biểu tượng menu)
