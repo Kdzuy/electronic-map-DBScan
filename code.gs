@@ -18,7 +18,8 @@ function doGet(e) {
       // Nhận vai trò và tên người dùng từ yêu cầu
       const role = e.parameter.role;
       const username = e.parameter.username;
-
+      const offset = parseInt(e.parameter.offset || 0);
+      const limit = parseInt(e.parameter.limit || 50);
       const data = sheetMarkers.getDataRange().getValues();
       const headers = data.shift();
 
@@ -40,9 +41,17 @@ function doGet(e) {
           markers = markers.filter(marker => marker.Owner === "viewer");
       }
       // Nếu là Admin, không cần lọc, sẽ thấy tất cả
-      // Viewer sẽ bị chặn ngay từ đầu, không nhận được dữ liệu
+      // BƯỚC 2: LẤY RA CHUNK TỪ KẾT QUẢ ĐÃ LỌC
+      const total = markers.length;
+      const chunk = markers.slice(offset, offset + limit);
 
-      return ContentService.createTextOutput(JSON.stringify(markers)).setMimeType(ContentService.MimeType.JSON); 
+      // BƯỚC 3: TRẢ VỀ CHUNK VÀ TỔNG SỐ CỦA DỮ LIỆU ĐÃ LỌC
+      const result = {
+          markers: chunk,
+          total: total
+      };
+      
+      return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
   }
   
   if (action == "getAccounts") {
@@ -56,7 +65,7 @@ function doGet(e) {
     return ContentService.createTextOutput(JSON.stringify(accounts)).setMimeType(ContentService.MimeType.JSON);
   }
 
-  return ContentService.createTextOutput("Invalid action").setMimeType(ContentService.MimeType.TEXT);
+  return ContentService.createTextOutput(JSON.stringify({ error: "Invalid action" })).setMimeType(ContentService.MimeType.JSON);
 }
 
 function doPost(e) {

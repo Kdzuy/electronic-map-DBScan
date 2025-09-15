@@ -4,7 +4,7 @@ let selectedUserOwners = new Set();
 let markerTypes = {};
 let markerLayerGroup = L.markerClusterGroup({ maxClusterRadius: 40 });
 let initialView = JSON.parse(localStorage.getItem('mapInitialView')) || { lat: 10.4633, lng: 105.6325, zoom: 14 };
-const GOOGLE_SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbwgZErrhyIrKPf4FHx1SkXU8LVLCQ9VycYdBTCAzwQB4G3ixkEIj0Yl_fO1ddGk9keM/exec';
+const GOOGLE_SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbyQOHNCeMvb7o4WNw3UR9uxSk3mUhRR0t1o3nzvdpZ9TSoDcq2XWXK4rwqw7lU-wDBPkw/exec';
 let allAccounts = []; // Biến mới để lưu danh sách tài khoản
 let currentUser = null; // Biến mới để lưu thông tin người dùng đã đăng nhập
 let isPopupOpen = false;
@@ -879,46 +879,72 @@ function masterFilter() {
     }
 
     // --- CHỨC NĂNG LƯU / TẢI GHIM ---
-    async function loadMarkers() {
-        try {
-            const [markersRes, typesRes] = await Promise.all([
-                fetch(`${GOOGLE_SHEET_API_URL}?action=getMarkers&role=${currentUser.Role}&username=${currentUser.Username}&t=${new Date().getTime()}`),
-                fetch(`${GOOGLE_SHEET_API_URL}?action=getTypes&t=${new Date().getTime()}`)
-            ]);
+async function loadMarkers() {
+    try {
+        // Tải dữ liệu Types trước và chỉ một lần
+        const typesRes = await fetch(`${GOOGLE_SHEET_API_URL}?action=getTypes&t=${new Date().getTime()}`);
+        if (!typesRes.ok) throw new Error('Không thể tải dữ liệu loại ghim.');
+        const typesData = await typesRes.json();
 
-            if (!markersRes.ok || !typesRes.ok) throw new Error('Không thể tải dữ liệu từ Google Sheet.');
+        markerTypes = {};
+        typesData.forEach(type => {
+            markerTypes[type.key+""] = {
+                name: type.name+"",
+                icon: new MarkerIcon({ iconUrl: type.iconUrl })
+            };
+        });
 
-            const rawMarkers = await markersRes.json();
-            const typesData = await typesRes.json();
+        // BẮT ĐẦU VÒNG LẶP TẢI MARKERS
+        allMarkersData = []; // Reset mảng dữ liệu ghim
+        let offset = 0;
+        const limit = 50; // Đồng bộ với server
+        let total = 0;
 
-            let processedMarkers = rawMarkers.map(marker => ({
-                ...marker,
-                name: String(marker.name || ''), // Chuyển đổi name thành chuỗi
-                desc: String(marker.desc || ''), // Chuyển đổi desc thành chuỗi
-                type: String(marker.type || ''), // Chuyển đổi type thành chuỗi
-                lat: parseFloat(marker.lat),
-                lng: parseFloat(marker.lng)
-            }));
+        // document.getElementById('map-blocker-message').textContent = 'Bắt đầu tải ghim...';
+
+        while (true) {
+            const markersRes = await fetch(`${GOOGLE_SHEET_API_URL}?action=getMarkers&role=${currentUser.Role}&username=${currentUser.Username}&offset=${offset}&limit=${limit}&t=${new Date().getTime()}`);
+            if (!markersRes.ok) throw new Error('Không thể tải dữ liệu ghim.');
+
+            const chunkData = await markersRes.json();
             
-            // Gán dữ liệu vào biến toàn cục (chưa lọc)
-            allMarkersData = processedMarkers;
-
-            markerTypes = {};
-            typesData.forEach(type => {
-                markerTypes[type.key+""] = {
-                    name: type.name+"",
-                    icon: new MarkerIcon({ iconUrl: type.iconUrl })
-                };
-            });
-
-            // KHỞI TẠO TRẠNG THÁI LỌC BAN ĐẦU: Chọn tất cả
-            selectedTypeKeys = new Set(Object.keys(markerTypes));
-            selectedUserOwners = new Set(allMarkersData.map(m => m.Owner).filter(Boolean));
+            if (total === 0) {
+                total = chunkData.total;
+                if (total === 0) break; // Dừng nếu không có ghim nào
+            }
             
-        } catch (error) {
-            console.error(error.message);
+            allMarkersData.push(...chunkData.markers);
+
+            document.getElementById('map-blocker-message').textContent = `Đang tải ${allMarkersData.length}/${total} ghim...`;
+            
+            offset += limit;
+            if (allMarkersData.length >= total) {
+                break; // Dừng khi đã tải đủ
+            }
         }
+        
+        // Xử lý dữ liệu sau khi đã tải xong toàn bộ
+        allMarkersData = allMarkersData.map(marker => ({
+            ...marker,
+            name: String(marker.name || ''),
+            desc: String(marker.desc || ''),
+            type: String(marker.type || ''),
+            lat: parseFloat(marker.lat),
+            lng: parseFloat(marker.lng)
+        }));
+        
+        // KHỞI TẠO TRẠNG THÁI LỌC BAN ĐẦU
+        selectedTypeKeys = new Set(Object.keys(markerTypes));
+        selectedUserOwners = new Set(allMarkersData.map(m => m.Owner).filter(Boolean));
+
+        // Ẩn thông báo sau khi hoàn tất
+        setTimeout(() => { document.getElementById('map-blocker-message').textContent = ''; }, 2000);
+
+    } catch (error) {
+        console.error(error.message);
+        document.getElementById('map-blocker-message').textContent = `Lỗi: ${error.message}`;
     }
+}
 
     // Hàm mới để tải các loại ghim mặc định khi cần
     function loadDefaultMarkerTypes() {
