@@ -480,7 +480,7 @@ window.deleteMarker = async function(markerId) {
 
         markerTypes[key] = { name: name, icon: new MarkerIcon({ iconUrl: iconUrl }) };
         await saveTypes(); // Đợi lưu xong
-        await loadMarkers(); // Tải lại dữ liệu mới nhất
+        //await loadMarkers(); // Tải lại dữ liệu mới nhất
         updateUI(); // Cập nhật giao diện với dữ liệu mới
     }
 
@@ -510,6 +510,7 @@ window.deleteMarker = async function(markerId) {
         // 3. Cập nhật giao diện và lưu lại danh sách loại ghim
         updateUI();
         await saveTypes();
+        // await loadMarkers();
         masterFilter();
         updateSelectAllState("types");
 
