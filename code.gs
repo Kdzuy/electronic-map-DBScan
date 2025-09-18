@@ -2,8 +2,48 @@ const sheetTypes = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Types")
 const sheetMarkers = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Markers");
 const sheetAccounts = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Accounts");
 
+/**
+ * Hàm phụ để tạo chuỗi phiên bản (version hash) cho dữ liệu ghim.
+ * Tránh lặp lại code ở nhiều nơi.
+ */
+function generateMarkersVersion() {
+  try {
+    // 1. Lấy toàn bộ dữ liệu dưới dạng một mảng hai chiều
+    const dataRange = sheetMarkers.getDataRange();
+    const values = dataRange.getValues();
+
+    // 2. Chuyển toàn bộ dữ liệu thành một chuỗi JSON duy nhất.
+    // Đây là cách hiệu quả để đảm bảo mọi giá trị, kể cả số và ngày tháng, đều được biểu diễn nhất quán.
+    const dataString = JSON.stringify(values);
+
+    // 3. Tính toán "dấu vân tay" MD5 từ chuỗi dữ liệu.
+    // Bất kỳ thay đổi nào trong dataString cũng sẽ tạo ra một hash hoàn toàn khác.
+    const hashBytes = Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, dataString);
+    
+    // 4. Chuyển đổi mảng byte của hash thành một chuỗi hex để dễ dàng so sánh
+    const version = hashBytes.map(byte => {
+      return ('0' + (byte & 0xFF).toString(16)).slice(-2);
+    }).join('');
+
+    return version;
+
+  } catch (e) {
+    // Nếu có lỗi, trả về một giá trị ngẫu nhiên để buộc client phải tải lại
+    return new Date().getTime().toString();
+  }
+}
+
 function doGet(e) {
   const action = e.parameter.action;
+
+  // ACTION MỚI (NHẸ): Chỉ lấy phiên bản dữ liệu
+  if (action == "getMarkersVersion") {
+    const version = generateMarkersVersion();
+    return ContentService.createTextOutput(JSON.stringify({ version: version }))
+           .setMimeType(ContentService.MimeType.JSON);
+  }
+  
+  // ACTION LẤY TYPES
   if (action == "getTypes") {
     const data = sheetTypes.getDataRange().getValues();
     const headers = data.shift();
@@ -14,58 +54,27 @@ function doGet(e) {
     });
     return ContentService.createTextOutput(JSON.stringify(types)).setMimeType(ContentService.MimeType.JSON);
   }
+
+  // ACTION LẤY GHIM (PHÂN ĐOẠN)
   if (action == "getMarkers") {
-      // Nhận vai trò và tên người dùng từ yêu cầu
-      const role = e.parameter.role;
-      const username = e.parameter.username;
       const offset = parseInt(e.parameter.offset || 0);
       const limit = parseInt(e.parameter.limit || 50);
+      
       const data = sheetMarkers.getDataRange().getValues();
       const headers = data.shift();
-
-      // Tìm vị trí cột "Owner" để lọc
-      const ownerColumnIndex = headers.indexOf('Owner');
-
-      let markers = data.map(row => { 
-          let marker = {}; 
-          headers.forEach((header, i) => marker[header] = row[i]); 
-          return marker; 
-      }); 
-
-      // LỌC DỮ LIỆU DỰA TRÊN VAI TRÒ
-      // Nếu là Editor, chỉ giữ lại các ghim do chính họ tạo
-      if (role === 'Editor') {
-          markers = markers.filter(marker => marker.Owner === username || marker.Owner === "viewer");
-      } 
-      if (role === 'Viewer') {
-          markers = markers.filter(marker => marker.Owner === "viewer");
-      }
-      // Nếu là Admin, không cần lọc, sẽ thấy tất cả
-      // BƯỚC 2: LẤY RA CHUNK TỪ KẾT QUẢ ĐÃ LỌC
-      const total = markers.length;
-      const chunk = markers.slice(offset, offset + limit);
-
-      // BƯỚC 3: TRẢ VỀ CHUNK VÀ TỔNG SỐ CỦA DỮ LIỆU ĐÃ LỌC
-      const result = {
-          markers: chunk,
-          total: total
-      };
       
-      return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
-  }
-  
-  if (action == "getAccounts") {
-    const data = sheetAccounts.getDataRange().getValues();
-    const headers = data.shift();
-    const accounts = data.map(row => {
-      let account = {};
-      headers.forEach((header, i) => account[header] = row[i]);
-      return account;
-    });
-    return ContentService.createTextOutput(JSON.stringify(accounts)).setMimeType(ContentService.MimeType.JSON);
-  }
+      const allMarkers = data.map(row => {
+          let marker = {};
+          headers.forEach((header, i) => marker[header] = row[i]);
+          return marker;
+      });
 
-  return ContentService.createTextOutput(JSON.stringify({ error: "Invalid action" })).setMimeType(ContentService.MimeType.JSON);
+      const total = allMarkers.length;
+      const chunk = allMarkers.slice(offset, offset + limit);
+
+      return ContentService.createTextOutput(JSON.stringify({ markers: chunk, total: total }))
+             .setMimeType(ContentService.MimeType.JSON);
+  }
 }
 
 function doPost(e) {
@@ -179,7 +188,30 @@ function doPost(e) {
     return ContentService.createTextOutput(JSON.stringify({ success: false, message: err.message })).setMimeType(ContentService.MimeType.JSON);
   }
 }
+function getMarkersAndVersion() {
+  const data = sheetMarkers.getDataRange().getValues();
+  const headers = data.shift(); // Tách dòng tiêu đề
 
+  const markers = data.map(row => {
+    let marker = {};
+    headers.forEach((header, i) => marker[header] = row[i]);
+    return marker;
+  });
+
+  // Tạo một chuỗi phiên bản đơn giản: số hàng + nội dung ô cuối cùng
+  const lastRow = sheetMarkers.getLastRow();
+  const lastCol = sheetMarkers.getLastColumn();
+  let version = "v1.0-" + lastRow + "-" + lastCol;
+  if (lastRow > 1 && lastCol > 0) {
+    const lastCellValue = sheetMarkers.getRange(lastRow, lastCol).getValue();
+    version += "-" + lastCellValue;
+  }
+  
+  return ContentService.createTextOutput(JSON.stringify({
+    markers: markers,
+    version: version 
+  })).setMimeType(ContentService.MimeType.JSON);
+}
 function doOptions(e) {
   // Hàm này dùng để trả lời cho các yêu cầu "preflight" của trình duyệt
   return ContentService.createTextOutput()

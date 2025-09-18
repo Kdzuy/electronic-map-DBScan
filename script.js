@@ -4,7 +4,8 @@ let selectedUserOwners = new Set();
 let markerTypes = {};
 let markerLayerGroup = L.markerClusterGroup({ maxClusterRadius: 40 });
 let initialView = JSON.parse(localStorage.getItem('mapInitialView')) || { lat: 10.4633, lng: 105.6325, zoom: 14 };
-const GOOGLE_SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbyQOHNCeMvb7o4WNw3UR9uxSk3mUhRR0t1o3nzvdpZ9TSoDcq2XWXK4rwqw7lU-wDBPkw/exec';
+const GOOGLE_SHEET_API_URL = 'https://script.google.com/macros/s/AKfycbwXdHqVAwISg6Db9-OPoZIxbUrSAm6U1g49ynaQ8h19hW9bp8arFqiyxZkhDYTP4qM75A/exec';
+const MARKER_CACHE_KEY = 'allMarkersCache';
 let allAccounts = []; // Biến mới để lưu danh sách tài khoản
 let currentUser = null; // Biến mới để lưu thông tin người dùng đã đăng nhập
 let isPopupOpen = false;
@@ -19,7 +20,7 @@ let timelineMinDate = null;
 let timelineMaxDate = null;
 let selectedTimelineStartDate = null;
 let selectedTimelineEndDate = null;
-let epsilonContainer, epsilonSlider, epsilonValueLabel, minPointsInput, loginUsernameInput, loginPasswordInput;
+let epsilonContainer, epsilonSlider, epsilonValueLabel, minPointsInput, loginUsernameInput, loginPasswordInput, toggleBtn;
     function clearAnalysisResults() {
         highDensityClusters = [];
         correlatedClusters = [];
@@ -28,8 +29,9 @@ let epsilonContainer, epsilonSlider, epsilonValueLabel, minPointsInput, loginUse
         if (highDensityList) highDensityList.innerHTML = '';
         if (correlatedList) correlatedList.innerHTML = '';
     }
-// END: Biến lưu trữ kết quả phân tích
 
+
+    toggleBtn = document.getElementById('toggle-btn');
 // Bắt đầu toàn bộ mã khi cây DOM đã sẵn sàng
 document.addEventListener('DOMContentLoaded', function () {
     loginUsernameInput = document.getElementById('username-input');
@@ -67,7 +69,7 @@ document.addEventListener('DOMContentLoaded', function () {
             iconSize: [20, 33],       // Gốc là [25, 41]
             iconAnchor: [10, 33],      // Gốc là [12, 41]
             popupAnchor: [1, -28],     // Gốc là [1, -34]
-            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+            shadowUrl: '/icons/marker-shadow.png',
             shadowSize: [33, 33],      // Gốc là [41, 41]
             shadowAnchor: [10, 33]     // Gốc là [12, 41]
         }
@@ -614,19 +616,19 @@ function populateTypeManager() {
         localStorage.setItem('customMarkerTypes', JSON.stringify(storableTypes));
     }
 
-    function loadMarkerTypesFromStorage() {
-        const storedTypes = JSON.parse(localStorage.getItem('customMarkerTypes'));
-        if (storedTypes && Object.keys(storedTypes).length > 0) {
-            for (const key in storedTypes) {
-                markerTypes[key] = { name: storedTypes[key].name, icon: new MarkerIcon({ iconUrl: storedTypes[key].iconUrl }) };
-            }
-        } else {
-            markerTypes = {
-                'restaurant': { name: 'Nhà hàng', icon: new MarkerIcon({ iconUrl: availableIcons[2] }) },
-                'school': { name: 'Trường học', icon: new MarkerIcon({ iconUrl: availableIcons[0] }) }
-            };
-        }
-    }
+    // function loadMarkerTypesFromStorage() {
+    //     const storedTypes = JSON.parse(localStorage.getItem('customMarkerTypes'));
+    //     if (storedTypes && Object.keys(storedTypes).length > 0) {
+    //         for (const key in storedTypes) {
+    //             markerTypes[key] = { name: storedTypes[key].name, icon: new MarkerIcon({ iconUrl: storedTypes[key].iconUrl }) };
+    //         }
+    //     } else {
+    //         markerTypes = {
+    //             'restaurant': { name: 'Nhà hàng', icon: new MarkerIcon({ iconUrl: availableIcons[2] }) },
+    //             'school': { name: 'Trường học', icon: new MarkerIcon({ iconUrl: availableIcons[0] }) }
+    //         };
+    //     }
+    // }
 
     // 1. HÀM LỌC TỔNG: Trung tâm xử lý mọi bộ lọc
 function masterFilter() {
@@ -636,76 +638,81 @@ function masterFilter() {
     }
 
     const searchTerm = document.getElementById('search-pinned') ? document.getElementById('search-pinned').value.toLowerCase() : '';
-    const isAdmin = currentUser && currentUser.Role === 'Admin';
+    
+    // BƯỚC 1: KHAI BÁO VÀ ÁP DỤNG BỘ LỌC BẮT BUỘC DỰA TRÊN VAI TRÒ
+    // Khai báo `filteredData` ngay từ đầu và gán giá trị dựa trên quyền của người dùng.
+    // Đây là bước quan trọng nhất để sửa lỗi.
+    let filteredData;
 
-    // Lọc dữ liệu từ allMarkersData
-    let filteredData = allMarkersData.filter(marker => {
+    if (currentUser) {
+        const userRole = currentUser.Role.toLowerCase();
+
+        if (userRole === 'viewer') {
+            // **Viewer:** Chỉ thấy ghim của chính mình.
+            filteredData = allMarkersData.filter(marker => marker.Owner === currentUser.Username);
+        } else if (userRole === 'editor') {
+            // **Editor:** Thấy ghim của mình VÀ của tất cả Viewers
+            filteredData = allMarkersData.filter(marker => marker.Owner === currentUser.Username || marker.Owner === 'viewer');
+        } else {
+            // **Admin:** Mặc định thấy tất cả ghim.
+            filteredData = allMarkersData;
+        }
+    } else {
+        // Nếu không đăng nhập, không có dữ liệu để hiển thị.
+        filteredData = [];
+    }
+    
+    // BƯỚC 2: ÁP DỤNG CÁC BỘ LỌC TỪ GIAO DIỆN NGƯỜI DÙNG (UI FILTERS)
+    // Các bộ lọc này sẽ hoạt động trên tập dữ liệu đã được giới hạn bởi vai trò ở trên.
+    let uiFilteredData = filteredData.filter(marker => {
         if (!marker) return false;
+        
         const typeMatch = selectedTypeKeys.has(marker.type);
-        const userMatch = isAdmin ? selectedUserOwners.has(marker.Owner) : true;
+        const userMatch = selectedUserOwners.has(marker.Owner);
+
         const timelineMatch = (() => {
-            // Nếu thanh trượt không hoạt động, luôn hiển thị
             if (!selectedTimelineStartDate || !selectedTimelineEndDate) return true;
-            // Nếu ghim không có ngày, luôn hiển thị
             if (!marker.inclusionDate) return true;
-            
             const markerDate = new Date(marker.inclusionDate);
-            // So sánh ngày (không tính giờ)
             return markerDate.setHours(0,0,0,0) <= selectedTimelineEndDate.setHours(0,0,0,0);
         })();
-        return typeMatch && userMatch && timelineMatch;
 
+        return typeMatch && userMatch && timelineMatch;
     });
 
+    // Lọc theo ô tìm kiếm (giữ nguyên)
     if (searchTerm) {
-        filteredData = filteredData.filter(marker => 
+        uiFilteredData = uiFilteredData.filter(marker => 
             (marker.name && marker.name.toLowerCase().includes(searchTerm)) || 
             (marker.desc && marker.desc.toLowerCase().includes(searchTerm))
         );
     }
 
-    // --- START: LOGIC HIỂN THỊ MỚI ---
-
-    // Luôn dọn dẹp các lớp cũ trước khi vẽ
+    // Phần còn lại của hàm (vẽ heatmap, cluster, v.v...) giữ nguyên không đổi
     markerLayerGroup.clearLayers();
     if (heatLayer) {
         map.removeLayer(heatLayer);
         heatLayer = null;
     }
-
-    // Cập nhật danh sách ghim bên sidebar
-    populatePinnedList(filteredData);
-
-    // Quyết định xem nên vẽ heatmap hay các ghim riêng lẻ
+    populatePinnedList(uiFilteredData);
     if (isHeatmapMode) {
-        if (filteredData.length > 0) {
-            const heatPoints = filteredData.map(marker => [marker.lat, marker.lng]);
+        if (uiFilteredData.length > 0) {
+            const heatPoints = uiFilteredData.map(marker => [marker.lat, marker.lng]);
             heatLayer = L.heatLayer(heatPoints, {
                 radius: 25,
                 blur: 15,
                 maxZoom: 17,
-                // --- START: THÊM DÒNG NÀY ĐỂ TÙY CHỈNH MÀU SẮC ---
-                gradient: {
-                    0.0: 'transparent',  // Mật độ thấp nhất: trong suốt
-                    0.2: 'red',          // Bắt đầu chuyển sang đỏ
-                    0.4: 'darkred',      // Đỏ đậm hơn
-                    0.6: '#8B0000',      // Rất đậm
-                    1.0: '#4B0000'       // Mật độ cao nhất: đỏ siêu đậm
-                }
-                // --- END: THÊM DÒNG NÀY ---
+                gradient: { 0.0: 'transparent', 0.2: 'red', 0.4: 'darkred', 0.6: '#8B0000', 1.0: '#4B0000' }
             }).addTo(map);
         }
     } else if (isAnalysisMode) {
-        // Chạy phân tích DBSCAN nếu chế độ này đang bật
         const epsilonMeters = parseInt(epsilonSlider.value);
         const epsilonKm = epsilonMeters / 1000;
         const minPoints = parseInt(minPointsInput.value);
-        runDBScanAnalysis(filteredData, epsilonKm, minPoints);
+        runDBScanAnalysis(uiFilteredData, epsilonKm, minPoints);
     } else {
-        // Mặc định: vẽ các ghim riêng lẻ
-        filteredData.forEach(renderMarker);
+        uiFilteredData.forEach(renderMarker);
     }
-    // --- END: LOGIC HIỂN THỊ MỚI ---
 }
 
     // 2. HÀM CẬP NHẬT GIAO DIỆN BỘ LỌC LOẠI
@@ -879,51 +886,109 @@ function masterFilter() {
     }
 
     // --- CHỨC NĂNG LƯU / TẢI GHIM ---
+// Thay thế hoàn toàn hàm loadMarkers cũ bằng hàm này
 async function loadMarkers() {
+    const mapBlockerMessage = document.getElementById('map-blocker-message');
     try {
-        // Tải dữ liệu Types trước và chỉ một lần
+        // --- BƯỚC 1: TẢI TYPES (KHÔNG THAY ĐỔI) ---
+        mapBlockerMessage.textContent = 'Đang tải cấu hình...';
         const typesRes = await fetch(`${GOOGLE_SHEET_API_URL}?action=getTypes&t=${new Date().getTime()}`);
         if (!typesRes.ok) throw new Error('Không thể tải dữ liệu loại ghim.');
         const typesData = await typesRes.json();
-
         markerTypes = {};
         typesData.forEach(type => {
-            markerTypes[type.key+""] = {
-                name: type.name+"",
+            markerTypes[type.key + ""] = {
+                name: type.name + "",
                 icon: new MarkerIcon({ iconUrl: type.iconUrl })
             };
         });
 
-        // BẮT ĐẦU VÒNG LẶP TẢI MARKERS
-        allMarkersData = []; // Reset mảng dữ liệu ghim
-        let offset = 0;
-        const limit = 50; // Đồng bộ với server
-        let total = 0;
+        // --- BƯỚC 2: KIỂM TRA PHIÊN BẢN VÀ TẢI GHIM THÔNG MINH ---
+        mapBlockerMessage.textContent = 'Đang kiểm tra dữ liệu ghim...';
+        
+        // Lấy phiên bản mới nhất từ server
+        const versionRes = await fetch(`${GOOGLE_SHEET_API_URL}?action=getMarkersVersion&t=${new Date().getTime()}`);
+        if (!versionRes.ok) throw new Error('Không thể kiểm tra phiên bản dữ liệu.');
+        const serverVersionData = await versionRes.json();
+        const serverVersion = serverVersionData.version;
 
-        // document.getElementById('map-blocker-message').textContent = 'Bắt đầu tải ghim...';
+        // Lấy dữ liệu cache và trạng thái tải lần trước
+        let cachedData = JSON.parse(localStorage.getItem(MARKER_CACHE_KEY)) || { markers: [], version: null, status: 'new', total: 0 };
+        
+        let initialOffset = 0;
+        allMarkersData = [];
 
-        while (true) {
-            const markersRes = await fetch(`${GOOGLE_SHEET_API_URL}?action=getMarkers&role=${currentUser.Role}&username=${currentUser.Username}&offset=${offset}&limit=${limit}&t=${new Date().getTime()}`);
-            if (!markersRes.ok) throw new Error('Không thể tải dữ liệu ghim.');
+        // Kịch bản 1: Cache đã đầy đủ và mới nhất -> Dùng cache
+        if (cachedData.status === 'complete' && cachedData.version === serverVersion) {
+            allMarkersData = cachedData.markers;
+            mapBlockerMessage.textContent = `Đã tải ${allMarkersData.length} ghim từ bộ đệm.`;
+            console.log("Sử dụng dữ liệu ghim từ cache. Phiên bản: " + serverVersion);
+        
+        // Kịch bản 2: Cache đang tải dở dang và cùng phiên bản -> Tải tiếp
+        } else if (cachedData.status === 'incomplete' && cachedData.version === serverVersion) {
+            allMarkersData = cachedData.markers;
+            initialOffset = allMarkersData.length;
+            const remaining = cachedData.total - initialOffset;
+            mapBlockerMessage.textContent = `Phát hiện tải chưa hoàn tất. Tải tiếp ${remaining} ghim còn lại...`;
+            console.log(`Tiếp tục tải từ ghim thứ ${initialOffset}.`);
+        
+        // Kịch bản 3: Cache cũ hoặc không có -> Tải mới từ đầu
+        } else {
+            mapBlockerMessage.textContent = 'Phát hiện dữ liệu mới, bắt đầu tải...';
+            console.log(`Phiên bản cache (${cachedData.version}) khác server (${serverVersion}). Bắt đầu tải mới.`);
+        }
 
-            const chunkData = await markersRes.json();
-            
-            if (total === 0) {
-                total = chunkData.total;
-                if (total === 0) break; // Dừng nếu không có ghim nào
-            }
-            
-            allMarkersData.push(...chunkData.markers);
+        // Vòng lặp tải chỉ chạy khi dữ liệu chưa đầy đủ
+        if (allMarkersData.length === 0 || initialOffset > 0) {
+            let offset = initialOffset;
+            const limit = 100;
+            let total = cachedData.total || 0;
 
-            document.getElementById('map-blocker-message').textContent = `Đang tải ${allMarkersData.length}/${total} ghim...`;
-            
-            offset += limit;
-            if (allMarkersData.length >= total) {
-                break; // Dừng khi đã tải đủ
+            try {
+                while (true) {
+                    const markersRes = await fetch(`${GOOGLE_SHEET_API_URL}?action=getMarkers&offset=${offset}&limit=${limit}&t=${new Date().getTime()}`);
+                    if (!markersRes.ok) throw new Error(`Lỗi tải ghim ở vị trí ${offset}.`);
+                    
+                    const chunkData = await markersRes.json();
+                    
+                    if (total === 0) total = chunkData.total;
+                    if (total === 0 || !chunkData.markers || chunkData.markers.length === 0) break;
+                    
+                    allMarkersData.push(...chunkData.markers);
+                    mapBlockerMessage.textContent = `Đang tải ${allMarkersData.length}/${total} ghim...`;
+
+                    // Lưu tiến trình dở dang sau mỗi lần tải thành công 1 chunk
+                    localStorage.setItem(MARKER_CACHE_KEY, JSON.stringify({
+                        version: serverVersion,
+                        markers: allMarkersData,
+                        total: total,
+                        status: 'incomplete' // Đánh dấu là đang tải dở
+                    }));
+
+                    offset += chunkData.markers.length;
+                    if (allMarkersData.length >= total) break;
+                }
+
+                // Khi vòng lặp kết thúc thành công, đánh dấu là đã hoàn tất
+                localStorage.setItem(MARKER_CACHE_KEY, JSON.stringify({
+                    version: serverVersion,
+                    markers: allMarkersData,
+                    total: total,
+                    status: 'complete' 
+                }));
+                console.log("Đã tải xong và cập nhật cache với phiên bản mới.");
+
+            } catch (error) {
+                // Nếu có lỗi giữa chừng, dữ liệu dở dang đã được lưu
+                console.error(error.message);
+                const missingCount = total - allMarkersData.length;
+                mapBlockerMessage.textContent = `Tải không hoàn thành! Dữ liệu có thể không đầy đủ (thiếu ${missingCount} ghim). Vui lòng kiểm tra mạng và tải lại trang.`;
+                // Không return, vẫn tiếp tục hiển thị dữ liệu đã có
             }
         }
         
-        // Xử lý dữ liệu sau khi đã tải xong toàn bộ
+        // --- CÁC BƯỚC CÒN LẠI GIỮ NGUYÊN ---
+        // Xử lý và chuẩn hóa dữ liệu
         allMarkersData = allMarkersData.map(marker => ({
             ...marker,
             name: String(marker.name || ''),
@@ -932,30 +997,40 @@ async function loadMarkers() {
             lat: parseFloat(marker.lat),
             lng: parseFloat(marker.lng)
         }));
-        
-        // KHỞI TẠO TRẠNG THÁI LỌC BAN ĐẦU
+
+        // Khởi tạo bộ lọc, timeline và bản đồ
         selectedTypeKeys = new Set(Object.keys(markerTypes));
         selectedUserOwners = new Set(allMarkersData.map(m => m.Owner).filter(Boolean));
+        populateTypeFilter();
+        populateUserFilter();
+        setupTimelineSlider();
+        masterFilter();
 
-        // Ẩn thông báo sau khi hoàn tất
-        setTimeout(() => { document.getElementById('map-blocker-message').textContent = ''; }, 2000);
+        const mapControls = document.getElementById('map-controls');
+        if (mapControls) mapControls.style.display = 'block';
+        if (toggleBtn) toggleBtn.style.display = 'block';
+        
+        // Chỉ ẩn thông báo thành công, giữ lại thông báo lỗi
+        if (!mapBlockerMessage.textContent.startsWith('Tải lỗi')) {
+             setTimeout(() => { mapBlockerMessage.textContent = ''; }, 2000);
+        }
 
     } catch (error) {
         console.error(error.message);
-        document.getElementById('map-blocker-message').textContent = `Lỗi: ${error.message}`;
+        mapBlockerMessage.textContent = `Lỗi: ${error.message}`;
     }
 }
 
     // Hàm mới để tải các loại ghim mặc định khi cần
-    function loadDefaultMarkerTypes() {
-        markerTypes = {
-            'doi_tuong': { name: 'Đối tượng', icon: new MarkerIcon({ iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-violet.png' }) },
-            'dia_diem': { name: 'Địa điểm', icon: new MarkerIcon({ iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png' }) },
-            'ket_noi': { name: 'Kết nối', icon: new MarkerIcon({ iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png' }) },
-            'su_kien': { name: 'Sự kiện', icon: new MarkerIcon({ iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png' }) },
-            'nhiem_vu': { name: 'Nhiệm vụ', icon: new MarkerIcon({ iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-black.png' }) }
-        };
-    }
+    // function loadDefaultMarkerTypes() {
+    //     markerTypes = {
+    //         'doi_tuong': { name: 'Đối tượng', icon: new MarkerIcon({ iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-violet.png' }) },
+    //         'dia_diem': { name: 'Địa điểm', icon: new MarkerIcon({ iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png' }) },
+    //         'ket_noi': { name: 'Kết nối', icon: new MarkerIcon({ iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png' }) },
+    //         'su_kien': { name: 'Sự kiện', icon: new MarkerIcon({ iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png' }) },
+    //         'nhiem_vu': { name: 'Nhiệm vụ', icon: new MarkerIcon({ iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-black.png' }) }
+    //     };
+    // }
 
     async function saveMarkers() {
         // Chức năng này hiện không còn an toàn trong môi trường nhiều người dùng.
@@ -2102,6 +2177,17 @@ async function loadMarkers() {
 
         startDateLabel.textContent = formatDate(selectedTimelineStartDate);
         endDateLabel.textContent = formatDate(selectedTimelineEndDate);
+    }
+    const clearCacheBtn = document.getElementById('clear-cache-btn');
+    if (clearCacheBtn) {
+        clearCacheBtn.addEventListener('click', () => {
+            const confirmation = confirm("Bạn có chắc chắn muốn xóa toàn bộ dữ liệu ghim đã lưu trên máy này? Hành động này sẽ yêu cầu tải lại toàn bộ dữ liệu vào lần tới.");
+            if (confirmation) {
+                localStorage.removeItem(MARKER_CACHE_KEY);
+                alert("Đã xóa bộ đệm thành công! Trang sẽ được tải lại.");
+                location.reload();
+            }
+        });
     }
     initializeApp();
 });
