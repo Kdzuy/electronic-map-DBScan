@@ -1821,7 +1821,7 @@ async function loadMarkers() {
         .catch(error => {
             console.error('Lỗi đăng nhập:', error);
             handleLogout();
-            loginMessage.textContent = 'Phiên đăng nhập đã hết hạn. Vui lòng thử lại.';
+            loginMessage.textContent = 'Phiên đăng nhập đã hết hạn. Vui lòng (F5) thử lại.';
             document.getElementById('login-btn').disabled = false;
             document.getElementById('auth-toggle-btn').disabled = false;
         });
