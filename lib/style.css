@@ -1126,3 +1126,21 @@ input[type=range]::-moz-range-thumb {
     border-color: #007bff; /* Đổi màu viền sang xanh dương */
     box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25); /* Thêm hiệu ứng bóng mờ */
 }
+
+#user-info #user-fullname {
+    /* 1. Đảm bảo phần tử là một khối inline-block có chiều rộng cố định */
+    display: inline-block;
+    max-width: 100px; /* 🚨 ĐIỀU CHỈNH GIÁ TRỊ NÀY: Giới hạn chiều rộng mong muốn */
+    
+    /* 2. Ngăn không cho văn bản xuống dòng */
+    white-space: nowrap;
+    
+    /* 3. Ẩn phần văn bản vượt quá chiều rộng */
+    overflow: hidden;
+    
+    /* 4. Thêm dấu ba chấm (...) ở cuối */
+    text-overflow: ellipsis;
+    
+    /* 5. Đảm bảo không bị kéo dãn */
+    flex-shrink: 1; 
+}
