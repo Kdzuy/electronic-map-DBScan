@@ -90,17 +90,21 @@ function doPost(e) {
       const headers = data.shift();
       const usernameIndex = headers.indexOf('Username');
       const passwordIndex = headers.indexOf('Password');
+      const tokenIndex = headers.indexOf('Token');
 
       for (let i = 0; i < data.length; i++) {
         if (data[i][usernameIndex] === username && data[i][passwordIndex] === password) {
           // Tìm thấy tài khoản, trả về thông tin người dùng (KHÔNG BAO GỒM MẬT KHẨU)
           let userAccount = {};
+          let userToken = "";
           headers.forEach((header, index) => {
-            if (header !== 'Password') { // Lọc bỏ mật khẩu
+            if (header === 'Token') {
+                userToken = data[i][index]; // [MỚI] Lấy token để trả về riêng
+            } else if (header !== 'Password') { 
               userAccount[header] = data[i][index];
             }
           });
-          return ContentService.createTextOutput(JSON.stringify({ success: true, user: userAccount })).setMimeType(ContentService.MimeType.JSON);
+          return ContentService.createTextOutput(JSON.stringify({ success: true, user: userAccount, token: userToken })).setMimeType(ContentService.MimeType.JSON);
         }
       }
 
@@ -109,6 +113,10 @@ function doPost(e) {
     }
     // --- XỬ LÝ LƯU TỪNG MARKER ---
     if (action == "addMarker") {
+      const auth = checkAuth(requestData.token, ['Admin', 'Editor',"Viewer"]);
+      if (!auth.isValid) {
+        return ContentService.createTextOutput(JSON.stringify({ success: false, message: auth.message })).setMimeType(ContentService.MimeType.JSON);
+      }
       const marker = requestData.marker;
       const headers = sheetMarkers.getRange(1, 1, 1, sheetMarkers.getLastColumn()).getValues()[0];
       const newRow = headers.map(header => marker[header] || "");
@@ -117,6 +125,10 @@ function doPost(e) {
     }
     
     if (action == "updateMarker") {
+      const auth = checkAuth(requestData.token, ['Admin', 'Editor',"Viewer"]);
+      if (!auth.isValid) {
+        return ContentService.createTextOutput(JSON.stringify({ success: false, message: auth.message })).setMimeType(ContentService.MimeType.JSON);
+      }
       const marker = requestData.marker;
       const data = sheetMarkers.getDataRange().getValues();
       const headers = data.shift();
@@ -131,6 +143,10 @@ function doPost(e) {
     }
 
     if (action == "deleteMarker") {
+      const auth = checkAuth(requestData.token, ['Admin', 'Editor',"Viewer"]);
+      if (!auth.isValid) {
+        return ContentService.createTextOutput(JSON.stringify({ success: false, message: auth.message })).setMimeType(ContentService.MimeType.JSON);
+      }
       const markerId = requestData.markerId;
       const data = sheetMarkers.getDataRange().getValues();
       data.shift(); // Tách riêng header để không ảnh hưởng index
@@ -145,6 +161,10 @@ function doPost(e) {
 
     // --- XỬ LÝ LƯU TOÀN BỘ TYPES (VẪN GIỮ NGUYÊN) ---
     if (action == "saveTypes") {
+      const auth = checkAuth(requestData.token, ['Admin', 'Editor',"Viewer"]);
+      if (!auth.isValid) {
+        return ContentService.createTextOutput(JSON.stringify({ success: false, message: auth.message })).setMimeType(ContentService.MimeType.JSON);
+      }
       const types = requestData.types;
       const headers = sheetTypes.getRange(1, 1, 1, sheetTypes.getLastColumn()).getValues()[0];
       const dataToSave = types.map(typeObj => headers.map(header => typeObj[header] || ""));
@@ -156,6 +176,10 @@ function doPost(e) {
       return ContentService.createTextOutput(JSON.stringify({ success: true, message: "Lưu loại ghim thành công." })).setMimeType(ContentService.MimeType.JSON);
     }
       if (action == "deleteMarkersBatch") {
+        const auth = checkAuth(requestData.token, ['Admin', 'Editor',"Viewer"]);
+        if (!auth.isValid) {
+          return ContentService.createTextOutput(JSON.stringify({ success: false, message: auth.message })).setMimeType(ContentService.MimeType.JSON);
+        }
         const markerIdsToDelete = requestData.markerIds; // Đây là một mảng các ID
         if (!markerIdsToDelete || markerIdsToDelete.length === 0) {
           return ContentService.createTextOutput(JSON.stringify({ success: true, message: "Không có ghim nào để xóa." })).setMimeType(ContentService.MimeType.JSON);
@@ -220,4 +244,36 @@ function doOptions(e) {
       'Access-Control-Allow-Methods': 'POST, GET, OPTIONS', // Các phương thức được phép
       'Access-Control-Allow-Headers': 'Content-Type', // Các header được phép
     });
+}
+
+function checkAuth(token, allowedRoles) {
+  if (!token) return { isValid: false, message: "Thiếu Token xác thực." };
+
+  const sheetAccounts = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Accounts");
+  const data = sheetAccounts.getDataRange().getValues();
+  const headers = data.shift();
+  
+  // Xác định vị trí các cột (giả sử bạn đã thêm cột Token vào sheet Accounts)
+  // Lưu ý: Tên cột trong Sheet phải chính xác là "Token" và "Role"
+  const tokenIndex = headers.indexOf('Token'); 
+  const roleIndex = headers.indexOf('Role');
+
+  if (tokenIndex === -1) return { isValid: false, message: "Lỗi hệ thống: Không tìm thấy cột Token trong Sheet." };
+
+  // Tìm user có token khớp
+  const userRow = data.find(row => row[tokenIndex] === token);
+
+  if (!userRow) {
+    return { isValid: false, message: "Token không hợp lệ hoặc đã hết hạn." };
+  }
+
+  // Nếu có yêu cầu check quyền cụ thể (ví dụ chỉ Admin mới được xóa)
+  if (allowedRoles && allowedRoles.length > 0) {
+    const userRole = userRow[roleIndex];
+    if (!allowedRoles.includes(userRole)) {
+      return { isValid: false, message: "Bạn không có quyền thực hiện hành động này." };
+    }
+  }
+
+  return { isValid: true };
 }
