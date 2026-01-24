@@ -38,6 +38,10 @@ function doGet(e) {
 
   // ACTION MỚI (NHẸ): Chỉ lấy phiên bản dữ liệu
   if (action == "getMarkersVersion") {
+    const auth = checkAuth(e.parameter.token, ['Admin', 'Editor',"Viewer"]);
+      if (!auth.isValid) {
+        return ContentService.createTextOutput(JSON.stringify({ success: false, message: auth.message })).setMimeType(ContentService.MimeType.JSON);
+      }
     const version = generateMarkersVersion();
     return ContentService.createTextOutput(JSON.stringify({ version: version }))
            .setMimeType(ContentService.MimeType.JSON);
@@ -45,6 +49,10 @@ function doGet(e) {
   
   // ACTION LẤY TYPES
   if (action == "getTypes") {
+    const auth = checkAuth(e.parameter.token, ['Admin', 'Editor',"Viewer"]);
+      if (!auth.isValid) {
+        return ContentService.createTextOutput(JSON.stringify({ success: false, message: auth.message })).setMimeType(ContentService.MimeType.JSON);
+      }
     const data = sheetTypes.getDataRange().getValues();
     const headers = data.shift();
     const types = data.map(row => {
@@ -57,6 +65,10 @@ function doGet(e) {
 
   // ACTION LẤY GHIM (PHÂN ĐOẠN)
   if (action == "getMarkers") {
+    const auth = checkAuth(e.parameter.token, ['Admin', 'Editor',"Viewer"]);
+      if (!auth.isValid) {
+        return ContentService.createTextOutput(JSON.stringify({ success: false, message: auth.message })).setMimeType(ContentService.MimeType.JSON);
+      }
       const offset = parseInt(e.parameter.offset || 0);
       const limit = parseInt(e.parameter.limit || 50);
       
@@ -110,6 +122,32 @@ function doPost(e) {
 
       // Nếu không tìm thấy
       return ContentService.createTextOutput(JSON.stringify({ success: false, message: 'Tên đăng nhập hoặc mật khẩu không đúng.' })).setMimeType(ContentService.MimeType.JSON);
+    }
+    // --- [MỚI] KIỂM TRA LẠI TOKEN KHI RELOAD TRANG ---
+    if (action === 'verifyToken') {
+      const token = requestData.token;
+      
+      const data = sheetAccounts.getDataRange().getValues();
+      const headers = data.shift();
+      const tokenIndex = headers.indexOf('Token');
+      
+      // Tìm user có token khớp
+      for (let i = 0; i < data.length; i++) {
+        if (data[i][tokenIndex] === token) {
+          // Token hợp lệ -> Trả về thông tin user mới nhất
+          let userAccount = {};
+          headers.forEach((header, index) => {
+            if (header !== 'Password' && header !== 'Token') { 
+              userAccount[header] = data[i][index];
+            }
+          });
+          // Trả về success: true để client biết token vẫn sống
+          return ContentService.createTextOutput(JSON.stringify({ success: true, user: userAccount })).setMimeType(ContentService.MimeType.JSON);
+        }
+      }
+      
+      // Nếu chạy hết vòng lặp mà không thấy token -> Token hết hạn hoặc sai
+      return ContentService.createTextOutput(JSON.stringify({ success: false, message: 'Phiên đăng nhập hết hạn.' })).setMimeType(ContentService.MimeType.JSON);
     }
     // --- XỬ LÝ LƯU TỪNG MARKER ---
     if (action == "addMarker") {
