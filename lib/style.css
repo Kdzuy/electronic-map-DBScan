@@ -169,7 +169,9 @@ button {
 .info-popup .coord-actions a:hover .fa-pencil {
     color: #f39c12; /* Màu Vàng/Cam cho Sửa */
 }
-
+.info-popup .coord-actions a:hover .fa-share-nodes {
+    color: #0dcaf0; 
+}
 .info-popup .coord-actions a:hover .fa-copy {
     color: #3498db; /* Màu Xanh dương cho Sao chép */
 }
